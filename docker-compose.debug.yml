@@ -1,0 +1,14 @@
+services:
+  dev-app:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+    volumes:
+      - ./src:/app/src
+    ports:
+      - "4000:4000"  
+    working_dir: /app
+   
+    command: bash /app/debug.sh
+
+      
