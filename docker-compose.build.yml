@@ -4,12 +4,11 @@ services:
       context: .
       dockerfile: docker/Dockerfile
     volumes:
-      - ./backend:/app/backend
-      - ./frontend:/app/frontend
+      - ./src:/app/src
     ports:
       - "4000:4000"  
     working_dir: /app
    
-    command: bash /app/backend.sh
+    command: bash /app/startup.sh
 
       
