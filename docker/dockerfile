@@ -1,0 +1,21 @@
+FROM python:3.10
+
+# Install Node.js
+RUN apt-get update && \
+    apt-get install -y curl && \
+    curl -fsSL https://deb.nodesource.com/setup_lts.x | bash - && \
+    apt-get install -y nodejs && \
+    npm install -g npm
+
+# Set working directory
+WORKDIR /app
+
+COPY docker/startup.sh /app/startup.sh
+COPY docker/debug.sh /app/debug.sh
+
+RUN chmod +x /app/startup.sh
+RUN chmod +x /app/debug.sh
+
+# instal Python dependencies
+RUN pip install --upgrade pip
+
