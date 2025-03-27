@@ -18,12 +18,12 @@ def auth():
     return {'token': '1234'}
 
 @app.route('/api/set_data', methods=['POST'])
-def set_prompt():
-    get_saved_data_api().set_data(request.json['data'])
-    return "Prompt set successfully"
+def set_data():
+    get_saved_data_api().set_data(request.json)
+    return get_saved_data_api().get_data()
 
 @app.route('/api/get_data', methods=['GET'])
-def get_prompt():
+def get_data():
     return get_saved_data_api().get_data()
 
 

@@ -4,8 +4,9 @@ import './App.css';
 import LoginForm from './LoginForm';
 import Cookies from 'js-cookie';
 
-import SetData from './ComponentSetData';
-import GetData from './ComponentGetData';
+
+import ComponentHost from './ComponentHost';
+import ComponentPlayer from './ComponentPlayer';
 
 function App() {
   const [activeTab, setActiveTab] = useState('prepare');
@@ -30,11 +31,11 @@ function App() {
     <div className="App">
       <header className="App-header">
         <div>
-          <button onClick={() => setActiveTab('setdata')}>Set Data</button>
-          <button onClick={() => setActiveTab('getdata')}>Get Data</button>
+          <button onClick={() => setActiveTab('host')}>Host Interface</button>
+          <button onClick={() => setActiveTab('player')}>Player Interface</button>
         </div>
-        {activeTab === 'setdata' && <SetData />}
-        {activeTab === 'getdata' && <GetData />}
+        {activeTab === 'host' && <ComponentHost />}
+        {activeTab === 'player' && <ComponentPlayer />}
       </header>
     </div>
   );
