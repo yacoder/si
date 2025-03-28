@@ -3,6 +3,7 @@ import os
 
 
 from flask import Flask, request, send_from_directory
+
 # from flask_cors import CORS
 
 from backend.api.sample_db_handler import get_saved_data_api
@@ -17,11 +18,14 @@ game_data_provider = GameDataProvider(get_data_api())
 
 
 
+
 app = Flask(__name__, static_folder='../../frontend/build', static_url_path='/')
+
 # CORS(app)
 
 
 # dummy methods for testing only
+
 @app.route('/api/set_data', methods=['POST'])
 def set_data():
     get_saved_data_api().set_data(request.json)
@@ -30,6 +34,7 @@ def set_data():
 @app.route('/api/get_data', methods=['GET'])
 def get_data():
     return get_saved_data_api().get_data()
+
 
 
 
@@ -115,6 +120,7 @@ def get_player_game_data():
 
 
 
+
 @app.route('/', defaults={'path': ''})
 @app.route('/<path:path>')
 def serve(path):
@@ -128,4 +134,4 @@ def serve(path):
 
 
 if __name__ == '__main__':
-    app.run(host="0.0.0.0", port=4000)
+    app.run(host="127.0.0.1", port=4000)

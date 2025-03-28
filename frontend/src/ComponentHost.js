@@ -1,4 +1,5 @@
 // src/PrepareDataBasedOnURL.js
+
 import React, { useState, useEffect, useCallback } from 'react';
 import callAPI from './callAPI';
 
@@ -7,10 +8,10 @@ const POSSIBLE_STATES = {
     CREATED: 'CREATED',
     STARTED: 'STARTED',
     ENDED: 'ENDED'
+
 }
 
 function ComponentHost() {
-
 
     const [gameState, setGameState] = useState(POSSIBLE_STATES.NOT_EXIST);
     const [currentTournamentID, setCurrentTournamentID] = useState(null);
@@ -57,19 +58,23 @@ function ComponentHost() {
 
             } else {
                 setGameState(POSSIBLE_STATES.NOT_EXIST);
+
             }
         } catch (error) {
             console.error('Error fetching data:', error);
         } finally {
             setLoading(false);
         }
+
     }, [refreshCurrentTournament]);
+
 
 
 
     useEffect(() => {
         const fetchInitialData = async () => loadData();
         fetchInitialData();
+
     }, [loadData]);
 
     const handleCreateGame = async () => {
@@ -85,6 +90,7 @@ function ComponentHost() {
 
             });
             await loadData();
+
         } catch (error) {
             console.error('Error setting data:', error);
         }
@@ -92,9 +98,11 @@ function ComponentHost() {
 
     const handleStartGame = async () => {
         try {
+
             await callAPI(`/api/tournament/${currentTournamentID}/update`, 'POST',
                 { tournament_data: { status: POSSIBLE_STATES.STARTED } });
             await refreshCurrentTournament();
+
         } catch (error) {
             console.error('Error setting data:', error);
         }
@@ -106,9 +114,11 @@ function ComponentHost() {
 
     const handleEndGame = async () => {
         try {
+
             await callAPI(`/api/tournament/${currentTournamentID}/update`, 'POST',
                 { tournament_data: { status: POSSIBLE_STATES.ENDED } });
             await loadData();
+
         } catch (error) {
             console.error('Error setting data:', error);
         }
@@ -117,7 +127,6 @@ function ComponentHost() {
     return (
         <div>
             <h2>Host Interface</h2>
-
             {(gameState === POSSIBLE_STATES.NOT_EXIST || gameState === POSSIBLE_STATES.ENDED) && (
                 <div>
                     <h3>No Tournament Started</h3>
@@ -137,13 +146,16 @@ function ComponentHost() {
                     <h3>Tournament/Game Created</h3>
                     <p>Tournament Name: {tournamentName}</p>
                     <p>To invite players give them this code: {gameInviteCode}</p>
+
                     <button onClick={handleLoadPlayers}>Load players (TODO: add socket to do it)</button>
                     <button onClick={handleStartGame}>Start Game</button>
                 </div>
             )}
+
             {gameState === POSSIBLE_STATES.STARTED && (
                 <div>
                     <h3>Game In Progress</h3>
+
                     <button onClick={handleLoadPlayers}>Load players (TODO: add socket to do it)</button>
                     <button onClick={handleEndGame}>End Game</button>
                 </div>
@@ -151,7 +163,9 @@ function ComponentHost() {
 
             {players.map((player, index) => (
                 <div key={index}>
+
                     <p>{player.name}</p>
+
                 </div>
             ))}
 

@@ -3,16 +3,19 @@ import axios from 'axios';
 import Cookies from 'js-cookie';
 
 function LoginForm({ onLogin }) {
+
     const [userToken, setUserToken] = useState('');
     const [gameToken, setGameToken] = useState('');
     const [hostName, setHostName] = useState('');
     const [playerName, setPlayerName] = useState('');
     const [hostEmail, setHostEmail] = useState('');
+
     const [error, setError] = useState('');
 
     const handleSubmit = async (e) => {
         e.preventDefault();
         try {
+
             const response = await axios.post('/auth', {
                 token: userToken,
                 player_data: {
@@ -24,12 +27,15 @@ function LoginForm({ onLogin }) {
                     email: hostEmail,
                 },
             });
+
             const { token } = response.data;
             Cookies.set('authToken', token);
             sessionStorage.setItem('authToken', token);
             onLogin();
         } catch (err) {
+
             setError('Invalid credentials');
+
         }
     };
 
@@ -67,6 +73,7 @@ function LoginForm({ onLogin }) {
                 value={gameToken}
                 onChange={(e) => setGameToken(e.target.value)}
                 placeholder="Enter Game Token"
+
             />
             <button type="submit">Login</button>
             {error && <p>{error}</p>}
