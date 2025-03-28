@@ -3,10 +3,12 @@ import React, { useState, useEffect } from 'react';
 import callAPI from './callAPI';
 
 const POSSIBLE_STATES = {
+
     NOT_EXIST: 'NOT_EXIST',
     CREATED: 'CREATED',
     STARTED: 'STARTED',
     ENDED: 'ENDED'
+
 }
 
 function ComponentPlayer() {
@@ -15,6 +17,7 @@ function ComponentPlayer() {
     const [gameState, setGameState] = useState(POSSIBLE_STATES.NOT_EXIST);
     const [players, setPlayers] = useState([]);
     const [tournamentName, setTournamentName] = useState(null);
+
     const [loading, setLoading] = useState(false);
 
     const loadData = async () => {
@@ -34,6 +37,7 @@ function ComponentPlayer() {
                 }
             } else {
                 setGameState(POSSIBLE_STATES.NOT_EXIST);
+
             }
         } catch (error) {
             console.error('Error fetching data:', error);
@@ -56,6 +60,7 @@ function ComponentPlayer() {
         await loadData();
     }
 
+
     const logout = () => {
         // Clear the token and redirect to login page
         sessionStorage.removeItem('authToken');
@@ -64,9 +69,11 @@ function ComponentPlayer() {
 
 
 
+
     return (
         <div>
             <h2>Player Interface</h2>
+
 
             {gameState === POSSIBLE_STATES.NOT_EXIST && <button onClick={() => logout()}>You have not been invited to any games</button>}
             {gameState === POSSIBLE_STATES.CREATED && (
@@ -82,16 +89,19 @@ function ComponentPlayer() {
                 <div>
                     <h3>Tournament:{tournamentName}</h3>
                     <h3>Game In Progress</h3>
+
                     <button onClick={() => handleLoadGames()}>Load Game State (TODO: add socket to do it)</button>
                 </div>
             )}
 
             {players.map((player, index) => (
                 <div key={index}>
+
                     <p>{player.isCurrentPlayer ? "*" : ""}{player.name} : {player.score}</p>
                 </div>
             ))}
             {gameState === POSSIBLE_STATES.ENDED && <button onClick={() => logout()}>Game over</button>}
+
 
 
 

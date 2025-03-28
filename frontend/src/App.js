@@ -35,6 +35,7 @@ function App() {
 
   const handleLogin = () => {
     setDataBasedOnToken();
+
   };
   if (!isAuthenticated) {
     return <LoginForm onLogin={handleLogin} />;
@@ -43,12 +44,14 @@ function App() {
   return (
     <div className="App">
       <header className="App-header">
+
         {/* <div>
           <button onClick={() => setActiveTab('host')}>Host Interface</button>
           <button onClick={() => setActiveTab('player')}>Player Interface</button>
         </div> */}
         {!isPlayer && activeTab === 'host' && <ComponentHost />}
         {isPlayer && activeTab === 'player' && <ComponentPlayer />}
+
       </header>
     </div>
   );
