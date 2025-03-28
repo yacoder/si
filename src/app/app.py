@@ -4,14 +4,13 @@ import os
 
 from flask import Flask, request, send_from_directory
 from flask_cors import CORS
+from flask_sock import Sock
 
-from ..api.sample_db_handler import get_saved_data_api
-
-
-
+from src.api.sample_db_handler import get_saved_data_api
 
 app = Flask(__name__, static_folder='../client/build', static_url_path='/')
 CORS(app)
+sock = Sock(app)
 
 @app.route('/auth', methods=['POST'])
 def auth():
@@ -35,9 +34,14 @@ def serve(path):
     else:
         return send_from_directory(app.static_folder, 'index.html')
 
-
-
-
+@sock.route('/ws')
+def websocket_connection(ws):
+    while True:
+        data = ws.receive()  # Receive a message from the client
+        print(f"Received: {data}")
+        ws.send(f"Echo: {data}")  # Send a response back to the client
 
 if __name__ == '__main__':
+    # socketio.run(app, debug=True, allow_unsafe_werkzeug=True)
+    # app.run(host="0.0.0.0", port=4000)
     app.run(host="0.0.0.0", port=4000)
