@@ -42,6 +42,4 @@ def websocket_connection(ws):
         ws.send(f"Echo: {data}")  # Send a response back to the client
 
 if __name__ == '__main__':
-    # socketio.run(app, debug=True, allow_unsafe_werkzeug=True)
-    # app.run(host="0.0.0.0", port=4000)
     app.run(host="0.0.0.0", port=4000)
