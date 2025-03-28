@@ -9,6 +9,6 @@ services:
       - "4000:4000"  
     working_dir: /app
    
-    command: bash /app/debug.sh
+    command: bash /app/backend.sh
 
       
