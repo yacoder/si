@@ -19,7 +19,6 @@ RUN chmod +x /app/startup.sh
 RUN chmod +x /app/debug.sh
 RUN chmod +x /app/backend.sh
 
-
 # instal Python dependencies
 RUN pip install --upgrade pip
 
