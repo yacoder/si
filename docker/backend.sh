@@ -2,5 +2,4 @@
 
 cd /app
 pip install -r backend/app/requirements.txt
-npm --prefix frontend install
-npm --prefix frontend run watch
+python -m backend.app.app

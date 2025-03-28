@@ -12,9 +12,12 @@ WORKDIR /app
 
 COPY docker/startup.sh /app/startup.sh
 COPY docker/debug.sh /app/debug.sh
+COPY docker/backend.sh /app/backend.sh
+
 
 RUN chmod +x /app/startup.sh
 RUN chmod +x /app/debug.sh
+RUN chmod +x /app/backend.sh
 
 # instal Python dependencies
 RUN pip install --upgrade pip
