@@ -51,7 +51,7 @@ class AServerManager:
         threading.Timer(interval, self.check_signals, [interval]).start()
 
     @abstractmethod
-    def get_game_by_id(self, id: str):
+    def get_game_by_id(self, game_id: str):
             pass
 
     @abstractmethod
@@ -81,10 +81,10 @@ class SIServerManager(AServerManager):
     def get_game_by_player_id(self, player_id: str):
         return self.player_id_to_game.get(player_id)
 
-    def get_game_by_id(self, id: str):
-        if id in self.game_token_to_id:
-            id = self.game_token_to_id[id]
-        game = self.games.get(id)
+    def get_game_by_id(self, game_id: str):
+        if game_id in self.game_token_to_id:
+            game_id = self.game_token_to_id[game_id]
+        game = self.games.get(game_id)
         if game is None:
             # TODO implement fetching persisted game
             pass
