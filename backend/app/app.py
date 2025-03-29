@@ -10,7 +10,7 @@ from backend.api.generic_data_provider import get_data_api
 
 from backend.api.user_db_handler import UserDataProvider
 from backend.app.controllers.game_controller import test_socket_user, websocket_connection, get_game_status
-from backend.app.managers.server import SIServerManager, SIGame, logger
+from backend.app.managers.server import SIServerManager, logger
 from backend.app.util.util import setup_logger, ArgConfig
 
 user_data_provider = UserDataProvider(get_data_api())
@@ -72,7 +72,7 @@ def get_authenticated_player(request):
 @app.route('/api/player/game', methods=['GET'])
 def get_player_game_data():
     try:
-        player = get_authenticated_player(request)
+        # player = get_authenticated_player(request)
         # game = game_data_provider.get_game_data(player["game_id"])
         return {"status": "OK"}, 200
     except ValueError as e:

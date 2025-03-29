@@ -9,7 +9,7 @@ from backend.api.generic_data_provider import get_data_api
 from backend.api.user_db_handler import UserDataProvider
 from backend.api.game_db_handler import GameDataProvider
 from backend.app.managers.entity import Player, Signal
-from backend.app.managers.server import SIServerManager, SIGame, AServerManager
+from backend.app.managers.server import SIServerManager
 from backend.app.util.util import setup_logger, to_dict, now
 
 user_data_provider = UserDataProvider(get_data_api())
@@ -82,7 +82,7 @@ def websocket_connection(ws, server_manager: SIServerManager):
         ws.send(f"{result}")
 
 def get_game_status(server_manager, game_id):
-    game = server_manager.get_game_by_id(game_id);
+    game = server_manager.get_game_by_id(game_id)
     if game is not None:
         return game.generate_game_status(), 200
     else:

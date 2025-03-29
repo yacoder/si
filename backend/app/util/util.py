@@ -10,7 +10,7 @@ import random
 def setup_logger():
     logging.basicConfig(
         level=logging.DEBUG,
-        format='%(asctime)s - %(levelname)s - %(message)s',
+        format='%(asctime)s - %(levelname)s - %(message)s',  # noqa
         stream = sys.stdout
     )
 
