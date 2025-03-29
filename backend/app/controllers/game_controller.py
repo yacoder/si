@@ -27,7 +27,8 @@ def test_socket_user(server_manager: SIServerManager):
     player_id = request.json.get("player_id")
     socket = server_manager.get_socket_by_player_id(player_id)
     if socket:
-        socket.send(f"ACK {player_id}")
+        result = to_dict({"player_id": player_id, "status": "OK"})
+        socket.send(result)
         return {"status": "OK"}, 200
     return {"status": "No Socket"}, 200
 
@@ -57,4 +58,4 @@ def websocket_connection(ws, server_manager: SIServerManager):
             result = {"status": "OK"}
 
         logger.info(f"ACK: {result}")
-        ws.send(f"ACK: {result}")
+        ws.send(f"{result}")

@@ -44,6 +44,11 @@ class AGame:
     def process_signal(self, player_id:str, signal):
         pass
 
+    @abstractmethod
+    def generate_game_status(self):
+        # generates game type specific status to be broadcasted to all players/host
+        pass
+
     def broadcast_event(self, message: any, player_ids: Optional[Iterable[str]] = None):
         # sends a message to all or subset of players
         # examples:
@@ -55,6 +60,10 @@ class AGame:
                 socket = self.server_manager.get_socket_by_player_id(p)
                 if socket is not None:
                     socket.send(message)
+
+    def update_status(self):
+        status = self.generate_game_status()
+        self.broadcast_event(status)
 
     def register_player(self, player: Player):
         self.players[player.id] = player
@@ -82,6 +91,13 @@ class SIGame(AGame):
 
         self.number_of_signals_in_previous_notification: int = 0
 
+
+    def generate_game_status(self):
+        players = list(self.players.values())
+        players.sort(key=lambda p: p.name)
+        result = dict()
+        for p in players:
+            result[p.id] = dict(name=p.name, nominal=self.current_nominal)
 
     def roll_to_next_question(self):
         self.nominal_index = (self.nominal_index + 1) % len(self.nominals)
