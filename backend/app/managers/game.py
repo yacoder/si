@@ -1,9 +1,10 @@
 import logging
+from threading import Timer
 from abc import abstractmethod
 from enum import Enum, auto
 from typing import Dict, Set, Optional, List, Iterable, Union
 
-from backend.app.managers.entity import Player
+from backend.app.managers.entity import Player, Signal
 from backend.app.util.util import generate_id, generate_token, now, to_dict
 
 logger = logging.getLogger(__name__)
@@ -27,7 +28,7 @@ class AGame:
     # abstract class to represent games (SI, Brain, Erudit Quartet, etc)
 
     def __init__(self, server_manager):
-        self.id = generate_id()
+        self.game_id = generate_id()
         self.token = generate_token()
         self.host: Optional[Player] = None
         self.players: Dict[str, Player] = dict()
@@ -58,7 +59,7 @@ class AGame:
         pass
 
     @abstractmethod
-    def process_signal(self, player_id:str, signal):
+    def process_signal(self, signal: Signal):
         pass
 
     @abstractmethod
@@ -72,6 +73,9 @@ class AGame:
         # affecting state of the game
         pass
 
+    @abstractmethod
+    def start_timer(self):
+        pass
 
     def broadcast_event(self, message: any, player_ids: Optional[Iterable[str]] = None):
         # sends a message to all or subset of players
@@ -79,7 +83,7 @@ class AGame:
         # - send update with new score/stats -> all players
         # - send notification that the player won the battle for the button (to a single player)
         # - send notification that the player lost the battle for the button (to all players who tried to win)
-        for p in list(self.players.keys()) + [self.host.id]:
+        for p in list(self.players.keys()) + [self.host.player_id]:
             if player_ids is None or p in player_ids:
                 socket = self.server_manager.get_socket_by_player_id(p)
                 if socket is not None:
@@ -93,10 +97,10 @@ class AGame:
         self.broadcast_event(status)
 
     def register_player(self, player: Player):
-        self.players[player.id] = player
+        self.players[player.player_id] = player
 
     def unregister_player(self, player: Player):
-        del self.players[player.id]
+        del self.players[player.player_id]
 
     def register_host(self, player: Player):
         self.host = player
@@ -105,8 +109,8 @@ class AGame:
 
 class SIGame(AGame):
 
-    DEFAULT_SIGNAL_ACCUMULATION_TIME = 5  # seconds
-
+    DEFAULT_SIGNAL_ACCUMULATION_TIME = 1  # seconds
+    DEFAULT_TIMER_COUNTDOWN = 5  # seconds
     DEFAULT_NOMINALS = [10, 20, 30,40, 50]
 
     def __init__(self, server_manager, number_of_rounds=8):
@@ -116,14 +120,18 @@ class SIGame(AGame):
         self.current_nominal: int = self.nominals[self.nominal_index]
         self.current_round = 1
         self.number_of_rounds = number_of_rounds
+        self.allow_multiple_answers = False
 
         # resettable variables
         self.is_host_notified_on_first_signal: bool = False
-        self.signals: Dict[str, any] = dict()  # map of [user -> ts of response]
+        self.signals: Dict[str, any] = dict()  # map of [player_id -> ts of response]
         self.first_signal_ts = None
         # after first signal is received, we wait certain time to allow other signals accumulate
         self.is_accepting_signals: bool = True
         self.question_state: QuestionState = QuestionState.running
+        self.responders: List[Player] = []
+        self.failed_responders_ids: List[int] = []
+        self.time_left: int = SIGame.DEFAULT_TIMER_COUNTDOWN
 
     def reset(self):
         self.signals = dict()
@@ -131,6 +139,9 @@ class SIGame(AGame):
         self.first_signal_ts = None
         self.is_accepting_signals: bool = True
         self.question_state = QuestionState.running
+        self.failed_responders_ids.clear()
+        self.responders.clear()
+        self.time_left: int = SIGame.DEFAULT_TIMER_COUNTDOWN
 
     def generate_game_status(self):
         players = list(self.players.values())
@@ -138,11 +149,13 @@ class SIGame(AGame):
         status = dict()
         players_stat = list()
         for p in players:
-            players_stat.append(dict(name=p.name, player_id=p.id, score=p.score))
+            players_stat.append(dict(name=p.name, player_id=p.player_id, score=p.score))
         status['players'] = players_stat
         status['nominal'] = self.current_nominal
         status['game_state'] = self.game_state
         status['question_state'] = self.question_state.name
+        status['responders'] = self.responders
+        status['time_left'] = self.time_left
         result = dict(status=status)
         result = to_dict(result)
         return result
@@ -165,26 +178,51 @@ class SIGame(AGame):
             # cannot accept decision if noone is answering
             return
         if isinstance(decision, str):
-            decision = HostDecision(decision)
+            decision = HostDecision[decision]
 
         logger.info(f"decision: {decision}")
+        responder = self.responders[0]
         if decision == HostDecision.cancel:
             self.reset()
         else:
-            self.roll_to_next_question()
+            if decision == HostDecision.accept:
+                responder.score += self.current_nominal
+                self.roll_to_next_question()
+            else:
+                responder.score -= self.current_nominal
+                self.failed_responders_ids.append(responder.player_id)
 
-    def process_signal(self, player_id:str, signal):
+    def process_signal(self, signal: Signal):
+        player_id = signal.player_id
         if player_id in self.signals:
             # not allowing double count from the same player
+            return
+
+        if not self.allow_multiple_answers and player_id in self.failed_responders_ids:
+            # don't allow same person answer twice
             return
 
         if len(self.signals) == 0:
             self.question_state = QuestionState.awaiting_more_signals
             self.first_signal_ts = now()
         self.signals[player_id] = signal
-        signal['server_ts'] = now()
-        self.broadcast_event(self.signals, [self.host.id])
+        self.broadcast_event(self.signals, [self.host.player_id])
 
+    def _detect_responders_list(self) -> List[Player]:
+        responders: List[Player] = list()
+        first_signal_ts = None
+        for s in self.signals.keys():
+            player = self.players.get(s)
+            if player is not None:
+                if first_signal_ts is None:
+                    first_signal_ts = self.signals[s].server_ts
+                lag = int(self.signals[s].server_ts - first_signal_ts)
+                player.lag = lag
+                responders.append(player)
+        return responders
+
+    def _sort_signals(self):
+        self.signals = dict(sorted(self.signals.items(), key=lambda x: x[1].server_ts))
 
     def check_signals(self):
         if self.question_state == QuestionState.answering:
@@ -196,13 +234,38 @@ class SIGame(AGame):
                 self.is_host_notified_on_first_signal = True
             delta = now() - self.first_signal_ts
             if  delta > SIGame.DEFAULT_SIGNAL_ACCUMULATION_TIME * 1000:
-                message = dict(action="player_answering", players_queue=["A", "B", "C"])
                 logger.info(f"signal accumulation time expired, notifying players")
                 self.question_state = QuestionState.answering
-                self.broadcast_event(message)
+                self._sort_signals()
+                self.responders = self._detect_responders_list()
+                # message = dict(action="player_answering", players_queue=[x.name for x in self.responders])
+                # self.broadcast_event(message)
+                self.update_status()
+
             else:
                 logger.info(f"delta = {delta}; keep signals accumulation")
 
     def notify_host(self, message):
         logger.info(f"notifying host")
-        self.broadcast_event(message, player_ids=[self.host.id] )
+        self.broadcast_event(message, player_ids=[self.host.player_id])
+
+    def _run_timer(self, timer: Timer, interval:int):
+        logger.info(f"running _run_timer")
+        if self.question_state != QuestionState.running:
+            # if signal is received, stopping countdown
+            timer.cancel()
+        if self.time_left > 0:
+            logger.info(f"{self.time_left} seconds left")
+            self.time_left -= interval
+            self.update_status()
+        else:
+            logger.info(f"time expired, canceling timer and rolling over to next question")
+            self.roll_to_next_question()
+            self.update_status()
+            timer.cancel()
+
+    def start_timer(self, interval=1):
+        logger.info(f"starting timer with {self.time_left} seconds left")
+        timer = Timer(interval, self.start_timer, [interval])
+        self._run_timer(timer, interval)
+        timer.start()
