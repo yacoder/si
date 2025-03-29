@@ -4,6 +4,7 @@ import string
 import sys
 import uuid
 import random
+from datetime import datetime
 
 
 def setup_logger():
@@ -82,3 +83,6 @@ def to_dict(obj):
     else:
         # Base case: return the object as is (e.g., primitive types)
         return obj
+
+def now():
+    return datetime.timestamp(datetime.now())

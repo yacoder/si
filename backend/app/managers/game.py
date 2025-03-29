@@ -3,7 +3,7 @@ from abc import abstractmethod
 from typing import Dict, Set, Optional, List, Iterable
 
 from backend.app.managers.entity import Player
-from backend.app.util.util import generate_id, generate_token
+from backend.app.util.util import generate_id, generate_token, now
 
 logger = logging.getLogger(__name__)
 
@@ -41,7 +41,7 @@ class AGame:
         pass
 
     @abstractmethod
-    def process_signal(self, player_id:str, signal: int):
+    def process_signal(self, player_id:str, signal):
         pass
 
     def broadcast_event(self, message: any, player_ids: Optional[Iterable[str]] = None):
@@ -90,9 +90,12 @@ class SIGame(AGame):
     def process_host_decision(self):
         pass
 
-    def process_signal(self, player_id:str, signal: int):
-        self.signals[player_id] = self.last_signal_ts
-        self.broadcast_event(self.signals, [self.host.id])
+    def process_signal(self, player_id:str, signal):
+        if player_id not in self.signals:
+            # not allowing double count from the same player
+            self.signals[player_id] = signal
+            signal['server_ts'] = now()
+            self.broadcast_event(self.signals, [self.host.id])
 
 
     def check_signals(self):
