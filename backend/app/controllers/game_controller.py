@@ -9,7 +9,7 @@ from backend.api.generic_data_provider import get_data_api
 from backend.api.user_db_handler import UserDataProvider
 from backend.api.game_db_handler import GameDataProvider
 from backend.app.managers.entity import Player
-from backend.app.managers.server import SIServerManager, SIGame
+from backend.app.managers.server import SIServerManager, SIGame, AServerManager
 from backend.app.util.util import setup_logger, to_dict
 
 user_data_provider = UserDataProvider(get_data_api())
@@ -32,6 +32,7 @@ def test_socket_user(server_manager: SIServerManager):
         return {"status": "OK"}, 200
     return {"status": "No Socket"}, 200
 
+STATUS_OK = {"status": "OK"}
 
 def websocket_connection(ws, server_manager: SIServerManager):
     while True:
@@ -41,21 +42,39 @@ def websocket_connection(ws, server_manager: SIServerManager):
         logger.info(f"Received: {data}")
         result = {"status": "error", "desc": "unknown action"}
         if action == "start_game":
+            # { "action": "start_game", "host_name": "Masha" }
             host_name = data.get("host_name")
             game = create_game(server_manager, host_name)
             server_manager.register_socket(game.host.id, ws)
-            result = to_dict(game)
+            result = dict(id=game.id, token=game.token, host={"name": game.host.name, "id": game.host.id})
         elif action == "register":
+            # { "action": "register", "name": "Vovochka", "token": "ABCDEF" }
             player = Player(data.get("name"), data.get("token"))
-            player = server_manager.register_player(player)
-            server_manager.register_socket(player.id, ws)
+            player = server_manager.register_player(player, ws)
             result = to_dict(player)
         elif action == "signal":
+            # { "action": "signal", "player_id": "4", "local_ts": 213121237874 }
             player_id = data.get("player_id")
             game = server_manager.get_game_by_player_id(player_id)
             if game is not None:
                 server_manager.get_game_by_player_id(player_id).process_signal(player_id, data)
             result = {"status": "OK"}
+        elif action == "host_decision":
+            # { "action": "host_decision", "game_id": "3", "decision": "accept" }
+            game_id = data.get("game_id")
+            host_decision = data.get("host_decision")
+            game = server_manager.get_game_by_id(game_id)
+            if game is not None:
+                game.process_host_decision(host_decision)
+            result = STATUS_OK
+
 
         logger.info(f"ACK: {result}")
         ws.send(f"{result}")
+
+def get_game_status(server_manager, game_id):
+    game = server_manager.get_game_by_id(game_id);
+    if game is not None:
+        return game.generate_game_status(), 200
+    else:
+        return {"error": f"game {game_id} not found"}, 200

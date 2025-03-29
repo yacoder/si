@@ -13,7 +13,7 @@ from backend.api.generic_data_provider import get_data_api
 
 from backend.api.user_db_handler import UserDataProvider
 from backend.api.game_db_handler import GameDataProvider
-from backend.app.controllers.game_controller import test_socket_user, websocket_connection
+from backend.app.controllers.game_controller import test_socket_user, websocket_connection, get_game_status
 from backend.app.managers.server import SIServerManager, SIGame, logger
 from backend.app.util.util import setup_logger, ArgConfig
 
@@ -100,6 +100,12 @@ def test_socket_user_():
 @sock.route('/ws')
 def websocket_connection_(ws):
     return websocket_connection(ws, server_manager)
+
+@app.route('/game/status/<game_id>', methods=['GET'])
+def get_game_status_(game_id):
+    return get_game_status(server_manager, game_id)
+
+
 
 
 def main():

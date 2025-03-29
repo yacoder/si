@@ -2,9 +2,9 @@ import argparse
 import logging
 import string
 import sys
+import time
 import uuid
 import random
-from datetime import datetime
 
 
 def setup_logger():
@@ -67,10 +67,10 @@ def to_dict(obj):
     """Recursively converts an object to a dictionary."""
     if isinstance(obj, dict):
         # If the object is already a dictionary, process its items
-        return {key: value.__dict__ for key, value in obj.items()}
+        return {key: to_dict(value) for key, value in obj.items()}
     elif isinstance(obj, list):
         # If the object is a list, process each element
-        return [item.__dict__ for item in obj]
+        return [to_dict(item) for item in obj]
     elif hasattr(obj, "__dict__"):
         # If the object is a custom object, use its __dict__ attribute
         result = {}
@@ -85,4 +85,4 @@ def to_dict(obj):
         return obj
 
 def now():
-    return datetime.timestamp(datetime.now())
+    return time.time_ns() / 1000000

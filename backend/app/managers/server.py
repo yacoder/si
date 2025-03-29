@@ -20,19 +20,26 @@ class AServerManager:
         self.player_id_to_socket: Dict[str, Server] = dict()
 
 
-    def register_player(self, player: Player):
+    def register_player(self, player: Player, ws: Server):
         game_id = player.game_id
         game = self.get_game_by_id(game_id)
         if game is None:
             return {'error': f'Game identified by {game_id} not found'}, 400
         game.register_player(player)
         self.player_id_to_game[player.id] = game
+        self.register_socket(player.id, ws)
+        game.update_status()
         return player
 
     def unregister_player(self, player: Player):
         game = self.get_game_by_player_id(player.id)
         game.unregister_player(player)
         del self.player_id_to_game[player.id]
+        socket = self.get_socket_by_player_id(player.id)
+        if socket is not None:
+            socket.close()
+        del self.player_id_to_socket[player.id]
+        game.update_status()
 
 
     def _check_signals(self):
