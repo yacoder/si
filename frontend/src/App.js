@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import './App.css';
 
 import LoginForm from './LoginForm';
+import StartGame from './StartGame';
 import Cookies from 'js-cookie';
 
 
@@ -37,24 +38,27 @@ function App() {
     setDataBasedOnToken();
 
   };
-  if (!isAuthenticated) {
-    return <LoginForm onLogin={handleLogin} />;
-  }
+//  if (!isAuthenticated) {
+//    return <LoginForm onLogin={handleLogin} />;
+//  }
+//  else {
+    return <StartGame />;
+//  }
 
-  return (
-    <div className="App">
-      <header className="App-header">
-
-        {/* <div>
-          <button onClick={() => setActiveTab('host')}>Host Interface</button>
-          <button onClick={() => setActiveTab('player')}>Player Interface</button>
-        </div> */}
-        {!isPlayer && activeTab === 'host' && <ComponentHost />}
-        {isPlayer && activeTab === 'player' && <ComponentPlayer />}
-
-      </header>
-    </div>
-  );
+//  return (
+//    <div className="App">
+//      <header className="App-header">
+//
+//        {/* <div>
+//          <button onClick={() => setActiveTab('host')}>Host Interface</button>
+//          <button onClick={() => setActiveTab('player')}>Player Interface</button>
+//        </div> */}
+//        {!isPlayer && activeTab === 'host' && <ComponentHost />}
+//        {isPlayer && activeTab === 'player' && <ComponentPlayer />}
+//
+//      </header>
+//    </div>
+//  );
 }
 
 export default App;
