@@ -1,7 +1,4 @@
-import json
 import os
-
-
 
 from flask import Flask, request, send_from_directory
 
@@ -12,7 +9,6 @@ from backend.api.sample_db_handler import get_saved_data_api
 from backend.api.generic_data_provider import get_data_api
 
 from backend.api.user_db_handler import UserDataProvider
-from backend.api.game_db_handler import GameDataProvider
 from backend.app.controllers.game_controller import test_socket_user, websocket_connection, get_game_status
 from backend.app.managers.server import SIServerManager, SIGame, logger
 from backend.app.util.util import setup_logger, ArgConfig

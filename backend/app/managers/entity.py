@@ -9,6 +9,7 @@ class Player:
         self.player_id = generate_id()
         self.name = name
         self.game_id=game_id
+        self.lag = 0  # used to show delay when signal was received
 
 class Signal:
     def __init__(self, player_id: str, server_ts: int, client_ts: int):

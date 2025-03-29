@@ -75,9 +75,7 @@ class SIServerManager(AServerManager):
     def __init__(self):
         super().__init__()
         self.interval_seconds = 1
-
         self.check_signals(interval=self.interval_seconds)
-
         self.game_token_to_id: Dict[str, str] = dict()
 
     def get_game_by_player_id(self, player_id: str):

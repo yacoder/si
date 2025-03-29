@@ -58,7 +58,7 @@ def websocket_connection(ws, server_manager: SIServerManager):
             local_ts = data.get("local_ts")
             game = server_manager.get_game_by_player_id(player_id)
             if game is not None:
-                signal: Signal = Signal(player_id, local_ts, now())
+                signal: Signal = Signal(player_id, now(), local_ts)
                 server_manager.get_game_by_player_id(player_id).process_signal(signal)
             result = {"status": "OK"}
         elif action == "host_decision":
@@ -68,6 +68,13 @@ def websocket_connection(ws, server_manager: SIServerManager):
             game = server_manager.get_game_by_id(game_id)
             if game is not None:
                 game.process_host_decision(host_decision)
+            result = STATUS_OK
+        elif action == "start_timer":
+        #{ "action": "start_timer", "game_id": "2" }
+            game_id = data.get("game_id")
+            game = server_manager.get_game_by_id(game_id)
+            if game is not None:
+                game.start_timer()
             result = STATUS_OK
 
 
