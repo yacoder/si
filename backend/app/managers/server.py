@@ -26,19 +26,19 @@ class AServerManager:
         if game is None:
             return {'error': f'Game identified by {game_id} not found'}, 400
         game.register_player(player)
-        self.player_id_to_game[player.id] = game
-        self.register_socket(player.id, ws)
+        self.player_id_to_game[player.player_id] = game
+        self.register_socket(player.player_id, ws)
         game.update_status()
         return player
 
     def unregister_player(self, player: Player):
-        game = self.get_game_by_player_id(player.id)
+        game = self.get_game_by_player_id(player.player_id)
         game.unregister_player(player)
-        del self.player_id_to_game[player.id]
-        socket = self.get_socket_by_player_id(player.id)
+        del self.player_id_to_game[player.player_id]
+        socket = self.get_socket_by_player_id(player.player_id)
         if socket is not None:
             socket.close()
-        del self.player_id_to_socket[player.id]
+        del self.player_id_to_socket[player.player_id]
         game.update_status()
 
 
@@ -94,8 +94,8 @@ class SIServerManager(AServerManager):
 
     def create_game(self, host_name=None) -> AGame:
         game = SIGame(self)
-        self.games[game.id] = game
-        self.game_token_to_id[game.token] = game.id
+        self.games[game.game_id] = game
+        self.game_token_to_id[game.token] = game.game_id
         host_name = host_name or "Host"
         host = Player(host_name, game.token)
         game.register_host(host)

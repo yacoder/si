@@ -45,8 +45,8 @@ def websocket_connection(ws, server_manager: SIServerManager):
             # { "action": "start_game", "host_name": "Masha" }
             host_name = data.get("host_name")
             game = create_game(server_manager, host_name)
-            server_manager.register_socket(game.host.id, ws)
-            result = dict(id=game.id, token=game.token, host={"name": game.host.name, "id": game.host.id})
+            server_manager.register_socket(game.host.player_id, ws)
+            result = dict(id=game.game_id, token=game.token, host={"name": game.host.name, "id": game.host.player_id})
         elif action == "register":
             # { "action": "register", "name": "Vovochka", "token": "ABCDEF" }
             player = Player(data.get("name"), data.get("token"))

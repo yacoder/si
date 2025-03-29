@@ -27,7 +27,7 @@ class AGame:
     # abstract class to represent games (SI, Brain, Erudit Quartet, etc)
 
     def __init__(self, server_manager):
-        self.id = generate_id()
+        self.game_id = generate_id()
         self.token = generate_token()
         self.host: Optional[Player] = None
         self.players: Dict[str, Player] = dict()
@@ -79,7 +79,7 @@ class AGame:
         # - send update with new score/stats -> all players
         # - send notification that the player won the battle for the button (to a single player)
         # - send notification that the player lost the battle for the button (to all players who tried to win)
-        for p in list(self.players.keys()) + [self.host.id]:
+        for p in list(self.players.keys()) + [self.host.player_id]:
             if player_ids is None or p in player_ids:
                 socket = self.server_manager.get_socket_by_player_id(p)
                 if socket is not None:
@@ -93,10 +93,10 @@ class AGame:
         self.broadcast_event(status)
 
     def register_player(self, player: Player):
-        self.players[player.id] = player
+        self.players[player.player_id] = player
 
     def unregister_player(self, player: Player):
-        del self.players[player.id]
+        del self.players[player.player_id]
 
     def register_host(self, player: Player):
         self.host = player
@@ -140,7 +140,7 @@ class SIGame(AGame):
         status = dict()
         players_stat = list()
         for p in players:
-            players_stat.append(dict(name=p.name, player_id=p.id, score=p.score))
+            players_stat.append(dict(name=p.name, player_id=p.player_id, score=p.score))
         status['players'] = players_stat
         status['nominal'] = self.current_nominal
         status['game_state'] = self.game_state
@@ -186,7 +186,7 @@ class SIGame(AGame):
             self.first_signal_ts = now()
         self.signals[player_id] = signal
         signal['server_ts'] = now()
-        self.broadcast_event(self.signals, [self.host.id])
+        self.broadcast_event(self.signals, [self.host.player_id])
 
     def _detect_responders_list(self) -> List[Player]:
         responders: List[Player] = list()
@@ -221,4 +221,4 @@ class SIGame(AGame):
 
     def notify_host(self, message):
         logger.info(f"notifying host")
-        self.broadcast_event(message, player_ids=[self.host.id] )
+        self.broadcast_event(message, player_ids=[self.host.player_id])
