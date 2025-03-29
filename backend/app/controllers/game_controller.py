@@ -8,9 +8,9 @@ from backend.api.generic_data_provider import get_data_api
 
 from backend.api.user_db_handler import UserDataProvider
 from backend.api.game_db_handler import GameDataProvider
-from backend.app.managers.entity import Player
+from backend.app.managers.entity import Player, Signal
 from backend.app.managers.server import SIServerManager, SIGame, AServerManager
-from backend.app.util.util import setup_logger, to_dict
+from backend.app.util.util import setup_logger, to_dict, now
 
 user_data_provider = UserDataProvider(get_data_api())
 game_data_provider = GameDataProvider(get_data_api())
@@ -55,9 +55,11 @@ def websocket_connection(ws, server_manager: SIServerManager):
         elif action == "signal":
             # { "action": "signal", "player_id": "4", "local_ts": 213121237874 }
             player_id = data.get("player_id")
+            local_ts = data.get("local_ts")
             game = server_manager.get_game_by_player_id(player_id)
             if game is not None:
-                server_manager.get_game_by_player_id(player_id).process_signal(player_id, data)
+                signal: Signal = Signal(player_id, local_ts, now())
+                server_manager.get_game_by_player_id(player_id).process_signal(signal)
             result = {"status": "OK"}
         elif action == "host_decision":
             # { "action": "host_decision", "game_id": "3", "decision": "accept" }

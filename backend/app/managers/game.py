@@ -3,7 +3,7 @@ from abc import abstractmethod
 from enum import Enum, auto
 from typing import Dict, Set, Optional, List, Iterable, Union
 
-from backend.app.managers.entity import Player
+from backend.app.managers.entity import Player, Signal
 from backend.app.util.util import generate_id, generate_token, now, to_dict
 
 logger = logging.getLogger(__name__)
@@ -58,7 +58,7 @@ class AGame:
         pass
 
     @abstractmethod
-    def process_signal(self, player_id:str, signal):
+    def process_signal(self, signal: Signal):
         pass
 
     @abstractmethod
@@ -119,11 +119,12 @@ class SIGame(AGame):
 
         # resettable variables
         self.is_host_notified_on_first_signal: bool = False
-        self.signals: Dict[str, any] = dict()  # map of [user -> ts of response]
+        self.signals: Dict[str, any] = dict()  # map of [player_id -> ts of response]
         self.first_signal_ts = None
         # after first signal is received, we wait certain time to allow other signals accumulate
         self.is_accepting_signals: bool = True
         self.question_state: QuestionState = QuestionState.running
+        self.responders: List[Player] = []
 
     def reset(self):
         self.signals = dict()
@@ -131,6 +132,7 @@ class SIGame(AGame):
         self.first_signal_ts = None
         self.is_accepting_signals: bool = True
         self.question_state = QuestionState.running
+        self.responders.clear()
 
     def generate_game_status(self):
         players = list(self.players.values())
@@ -173,7 +175,8 @@ class SIGame(AGame):
         else:
             self.roll_to_next_question()
 
-    def process_signal(self, player_id:str, signal):
+    def process_signal(self, signal: Signal):
+        player_id = signal.player_id
         if player_id in self.signals:
             # not allowing double count from the same player
             return
@@ -185,6 +188,16 @@ class SIGame(AGame):
         signal['server_ts'] = now()
         self.broadcast_event(self.signals, [self.host.id])
 
+    def _detect_responders_list(self) -> List[Player]:
+        responders: List[Player] = list()
+        for s in self.signals.keys():
+            player = self.players.get(s)
+            if player is not None:
+                responders.append(player)
+        return responders
+
+    def _sort_signals(self):
+        self.signals = dict(sorted(self.signals.items(), key=lambda x: x[1].server_ts))
 
     def check_signals(self):
         if self.question_state == QuestionState.answering:
@@ -196,10 +209,13 @@ class SIGame(AGame):
                 self.is_host_notified_on_first_signal = True
             delta = now() - self.first_signal_ts
             if  delta > SIGame.DEFAULT_SIGNAL_ACCUMULATION_TIME * 1000:
-                message = dict(action="player_answering", players_queue=["A", "B", "C"])
                 logger.info(f"signal accumulation time expired, notifying players")
                 self.question_state = QuestionState.answering
+                self._sort_signals()
+                self.responders = self._detect_responders_list()
+                message = dict(action="player_answering", players_queue=[x.name for x in self.responders])
                 self.broadcast_event(message)
+
             else:
                 logger.info(f"delta = {delta}; keep signals accumulation")
 
