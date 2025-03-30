@@ -5,7 +5,7 @@ from enum import Enum, auto
 from typing import Dict, Optional, List, Iterable, Union
 
 from backend.app.managers.entity import Player, Signal
-from backend.app.util.util import generate_id, generate_token, now, to_dict
+from backend.app.util.util import generate_id, generate_token, now, to_dict, DEFAULT_NUMBER_OF_ROUNDS
 
 logger = logging.getLogger(__name__)
 
@@ -135,7 +135,7 @@ class SIGame(AGame):
     DEFAULT_TIMER_COUNTDOWN = 5  # seconds
     DEFAULT_NOMINALS = [10, 20, 30,40, 50]
 
-    def __init__(self, server_manager, number_of_rounds=8):
+    def __init__(self, server_manager, number_of_rounds=DEFAULT_NUMBER_OF_ROUNDS):
         super().__init__(server_manager)
         self.nominals: List[int] = SIGame.DEFAULT_NOMINALS
         self.nominal_index: int = 0

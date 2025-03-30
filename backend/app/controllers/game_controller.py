@@ -10,7 +10,7 @@ from backend.api.user_db_handler import UserDataProvider
 from backend.api.game_db_handler import GameDataProvider
 from backend.app.managers.entity import Player, Signal
 from backend.app.managers.server import SIServerManager
-from backend.app.util.util import setup_logger, to_dict, now
+from backend.app.util.util import setup_logger, to_dict, now, DEFAULT_NUMBER_OF_ROUNDS
 
 user_data_provider = UserDataProvider(get_data_api())
 game_data_provider = GameDataProvider(get_data_api())
@@ -19,8 +19,8 @@ setup_logger()
 
 logger = logging.getLogger(__name__)
 
-def create_game(server_manager: SIServerManager, host_name, ws:Server):
-    game = server_manager.create_game(ws, host_name=host_name)
+def create_game(server_manager: SIServerManager, host_name, ws:Server, number_of_rounds=DEFAULT_NUMBER_OF_ROUNDS):
+    game = server_manager.create_game(ws, host_name=host_name, number_of_rounds=number_of_rounds)
     return game
 
 def test_socket_user(server_manager: SIServerManager):
@@ -45,9 +45,11 @@ def websocket_connection(ws, server_manager: SIServerManager):
             logger.info(f"Received: {data}")
         result = {"status": "error", "desc": "unknown action"}
         if action == "start_game":
-            # { "action": "start_game", "host_name": "Masha" }
+            # { "action": "start_game", "host_name": "Masha", "number_of_rounds": 8 }
             host_name = data.get("host_name")
-            game = create_game(server_manager, host_name, ws)
+            number_of_rounds = data.get("number_of_rounds")
+            number_of_rounds = int(number_of_rounds) if number_of_rounds is not None else DEFAULT_NUMBER_OF_ROUNDS
+            game = create_game(server_manager, host_name, ws, number_of_rounds=number_of_rounds)
             result = dict(id=game.game_id, token=game.token, host={"name": game.host.name, "id": game.host.player_id, "token": game.token})
         elif action == "host_reconnect":
             # { "action": "host_reconnect",  "token": "ABCDEF" }

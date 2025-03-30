@@ -8,6 +8,7 @@ from simple_websocket import Server
 from backend.app.managers.entity import Player
 from backend.app.managers.game import AGame, SIGame
 from backend.app.managers.ntp_manager import NtpServer
+from backend.app.util.util import DEFAULT_NUMBER_OF_ROUNDS
 
 logger = logging.getLogger(__name__)
 
@@ -105,7 +106,7 @@ class SIServerManager(AServerManager):
             pass
         return game
 
-    def create_game(self, ws:Server, host_name=None, host_id=None) -> AGame:
+    def create_game(self, ws:Server, host_name=None, host_id=None, number_of_rounds=DEFAULT_NUMBER_OF_ROUNDS) -> AGame:
         game = SIGame(self)
         self.games[game.game_id] = game
         self.game_token_to_id[game.token] = game.game_id
@@ -113,5 +114,6 @@ class SIServerManager(AServerManager):
         host = Player(host_name, game.token, host_id)
         self.add_player_to_all_maps(host, ws)
         game.register_host(host)
+        game.number_of_rounds = number_of_rounds if number_of_rounds is not None else DEFAULT_NUMBER_OF_ROUNDS
         return game
 
