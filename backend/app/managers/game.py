@@ -92,7 +92,13 @@ class AGame:
             if player_ids is None or p in player_ids:
                 socket = self.server_manager.get_socket_by_player_id(p)
                 if socket is not None:
-                    socket.send(message)
+                    try:
+                        socket.send(message)
+                    except Exception as e:
+                        logger.error(f"Error sending message to {p}: {e}")
+                        # if socket is not available, remove it from the list of players
+                        if p in self.players:
+                            del self.players[p]
 
     def finalize_game(self):
         self.finalized = True
@@ -173,6 +179,7 @@ class SIGame(AGame):
         status['time_left'] = self.time_left
         status['finalized'] = 1 if self.finalized else 0
         status["game_stats"] = self.game_stats
+        status['game_id'] = self.game_id
         result = dict(status=status)
         result = to_dict(result)
         return result
@@ -208,6 +215,7 @@ class SIGame(AGame):
         responder = self.responders[0]
         if decision == HostDecision.cancel:
             self.reset()
+            self.update_status()
         else:
             if decision == HostDecision.accept:
                 responder.score += self.current_nominal

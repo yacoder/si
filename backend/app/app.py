@@ -2,10 +2,10 @@ import os
 
 from flask import Flask, request, send_from_directory
 
-# from flask_cors import CORS
+from flask_cors import CORS
 from flask_sock import Sock
 
-from backend.api.sample_db_handler import get_saved_data_api
+
 from backend.api.generic_data_provider import get_data_api
 
 from backend.api.user_db_handler import UserDataProvider
@@ -22,20 +22,10 @@ ArgConfig.load_args()
 
 app = Flask(__name__, static_folder='../../frontend/build', static_url_path='/')
 sock = Sock(app)
-# CORS(app)
+CORS(app)
 
 
-# dummy methods for testing only
 
-@app.route('/api/set_data', methods=['POST'])
-def set_data():
-    get_saved_data_api().set_data(request.json)
-    return get_saved_data_api().get_data()
-
-@app.route('/api/get_data', methods=['GET'])
-def get_data():
-    return "1234567890"
-#     return get_saved_data_api().get_data()
 
 
 
@@ -45,11 +35,10 @@ def auth():
     try:
         user_token = request.json.get("token")
         if user_token is None or user_token == "":
-            player_token = user_data_provider.enforce_player_token(request.json.get("player_token"))
             player_data = request.json.get("player_data")
-            player = user_data_provider.init_player(player_token, player_data)
-            return { "token": player["player_token"]}
-
+            transient_game = server_manager.get_game_by_id(player_data.get("game_token"))         
+            player = user_data_provider.init_player(request.json.get("player_token", None), player_data, transient_game)
+            return { "token":player["token"]}
         else:
             user_data = request.json.get("user_data")
             user = user_data_provider.init_user(user_token, user_data)
@@ -68,16 +57,29 @@ def get_authenticated_player(request):
     player = user_data_provider.init_player(player_token, {})
     return player
 
+
+@app.route
    
 @app.route('/api/player/game', methods=['GET'])
 def get_player_game_data():
     try:
-        # player = get_authenticated_player(request)
-        # game = game_data_provider.get_game_data(player["game_id"])
-        return {"status": "OK"}, 200
+        player = get_authenticated_player(request)
+        status = get_game_status(server_manager, player['game_id'])
+        status[0]['player'] = player
+        return status
     except ValueError as e:
         return {'error': str(e)}, 400   
     
+
+@app.route('/api/host/game/<game_id>', methods=['GET'])
+def get_host_game_data(game_id):
+    try:
+        host = get_authenticated_user(request)
+        return get_game_status(server_manager, game_id)
+    except ValueError as e:
+        return {'error': str(e)}, 400  
+    
+
 
 
 @app.route('/', defaults={'path': ''})
