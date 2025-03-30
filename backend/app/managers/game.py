@@ -91,7 +91,7 @@ class AGame:
         for p in list(self.players.keys()) + [self.host.player_id]:
             if player_ids is None or p in player_ids:
                 socket = self.server_manager.get_socket_by_player_id(p)
-                if socket is not None:
+                if socket is not None and socket.connected:
                     try:
                         socket.send(message)
                     except Exception as e:
@@ -99,6 +99,8 @@ class AGame:
                         # if socket is not available, remove it from the list of players
                         if p in self.players:
                             del self.players[p]
+                else:
+                    self.server_manager.unregister_player(p)
 
     def finalize_game(self):
         self.finalized = True
@@ -263,7 +265,7 @@ class SIGame(AGame):
         return responders
 
     def _sort_signals(self):
-        self.signals = dict(sorted(self.signals.items(), key=lambda x: x[1].server_ts))
+        self.signals = dict(sorted(self.signals.items(), key=lambda x: x[1].adjusted_ts))
 
     def check_signals(self):
         if self.question_state == QuestionState.answering:
@@ -280,8 +282,6 @@ class SIGame(AGame):
                 self.question_state = QuestionState.answering
                 self._sort_signals()
                 self.responders = self._detect_responders_list()
-                # message = dict(action="player_answering", players_queue=[x.name for x in self.responders])
-                # self.broadcast_event(message)
                 self.update_status()
 
             else:

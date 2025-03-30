@@ -100,19 +100,18 @@ function ComponentPlayer() {
             {gameState === POSSIBLE_STATES.NOT_EXIST && <button onClick={() => logout()}>Something broke</button>}
             {gameState === POSSIBLE_STATES.CREATED && (
                 <div>
-
-
                     <button onClick={handleJoinGame}>Game created, click to join...</button>
-
-
-
                 </div>
             )}
 
             {gameState === POSSIBLE_STATES.STARTED && (
                 <div>
                     <h3>Game ID: {gameID}</h3>
-                    <p>Game Status: {JSON.stringify(gameStatus)}</p>
+                    {gameStatus?.question_state === "fake" && (
+                        <div>
+                        <p>Game Status: {JSON.stringify(gameStatus)}</p>
+                        </div>
+                    )}
 
                     {gameStatus?.question_state === "running" && (
                         <div>

@@ -2,7 +2,7 @@ import json
 import logging
 
 from flask import request
-
+from simple_websocket import Server
 
 from backend.api.generic_data_provider import get_data_api
 
@@ -19,14 +19,14 @@ setup_logger()
 
 logger = logging.getLogger(__name__)
 
-def create_game(server_manager: SIServerManager, host_name):
-    game = server_manager.create_game(host_name=host_name)
+def create_game(server_manager: SIServerManager, host_name, ws:Server):
+    game = server_manager.create_game(ws, host_name=host_name)
     return game
 
 def test_socket_user(server_manager: SIServerManager):
     player_id = request.json.get("player_id")
     socket = server_manager.get_socket_by_player_id(player_id)
-    if socket:
+    if socket and socket.connected:
         result = to_dict({"player_id": player_id, "status": "OK"})
         socket.send(result)
         return {"status": "OK"}, 200
@@ -39,13 +39,15 @@ def websocket_connection(ws, server_manager: SIServerManager):
         data = ws.receive()  # Receive a message from the client
         data = json.loads(data)
         action = data.get("action")
-        logger.info(f"Received: {data}")
+        if action == "offset_check" or 'isTrusted' in data:
+            pass
+        else:
+            logger.info(f"Received: {data}")
         result = {"status": "error", "desc": "unknown action"}
         if action == "start_game":
             # { "action": "start_game", "host_name": "Masha" }
             host_name = data.get("host_name")
-            game = create_game(server_manager, host_name)
-            server_manager.register_socket(game.host.player_id, ws)
+            game = create_game(server_manager, host_name, ws)
             result = dict(id=game.game_id, token=game.token, host={"name": game.host.name, "id": game.host.player_id, "token": game.token})
         elif action == "host_reconnect":
             # { "action": "host_reconnect",  "token": "ABCDEF" }
@@ -78,7 +80,9 @@ def websocket_connection(ws, server_manager: SIServerManager):
             local_ts = data.get("local_ts")
             game = server_manager.get_game_by_player_id(player_id)
             if game is not None:
-                signal: Signal = Signal(player_id, now(), local_ts)
+                offset = server_manager.ntp_manager.get_offset(player_id)
+                adjusted_ts = local_ts + offset
+                signal: Signal = Signal(player_id, now(), local_ts, adjusted_ts)
                 server_manager.get_game_by_player_id(player_id).process_signal(signal)
             result = {"status": "OK"}
         elif action == "host_decision":
@@ -101,9 +105,16 @@ def websocket_connection(ws, server_manager: SIServerManager):
             game = server_manager.get_game_by_id(game_id)
             if game is not None:
                 game.finalize_game()
+        elif action == "offset_check":
+            data['server_in_ts'] = now()
+            server_manager.process_offset_check(data)
+            result = None
+        else:
+            result = None
 
-        logger.info(f"ACK: {result}")
-        ws.send(f"{result}")
+        if result is not None:
+            logger.info(f"Sending: {result}")
+            ws.send(f"{result}")
 
 def get_game_status(server_manager, game_id):
     game = server_manager.get_game_by_id(game_id)
