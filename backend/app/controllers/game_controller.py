@@ -76,7 +76,11 @@ def websocket_connection(ws, server_manager: SIServerManager):
             if game is not None:
                 game.start_timer()
             result = STATUS_OK
-
+        elif action == "finalize":
+            game_id = data.get("game_id")
+            game = server_manager.get_game_by_id(game_id)
+            if game is not None:
+                game.finalize_game()
 
         logger.info(f"ACK: {result}")
         ws.send(f"{result}")
@@ -84,6 +88,7 @@ def websocket_connection(ws, server_manager: SIServerManager):
 def get_game_status(server_manager, game_id):
     game = server_manager.get_game_by_id(game_id)
     if game is not None:
-        return game.generate_game_status(), 200
+        result = game.generate_game_status()
+        return result, 200
     else:
         return {"error": f"game {game_id} not found"}, 200

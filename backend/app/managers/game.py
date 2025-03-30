@@ -2,7 +2,7 @@ import logging
 from threading import Timer
 from abc import abstractmethod
 from enum import Enum, auto
-from typing import Dict, Set, Optional, List, Iterable, Union
+from typing import Dict, Optional, List, Iterable, Union
 
 from backend.app.managers.entity import Player, Signal
 from backend.app.util.util import generate_id, generate_token, now, to_dict
@@ -25,7 +25,7 @@ class HostDecision(Enum):
 
 
 class AGame:
-    # abstract class to represent games (SI, Brain, Erudit Quartet, etc)
+    # abstract class to represent games (SI, Brain, Erudit Quartet, etc.)
 
     def __init__(self, server_manager):
         self.game_id = generate_id()
@@ -34,6 +34,7 @@ class AGame:
         self.players: Dict[str, Player] = dict()
         self.server_manager = server_manager
         self.game_state = GameState.running.name
+        self.finalized = False  # if game is finalized, no new entries are allowed
 
     @abstractmethod
     def check_signals(self):
@@ -64,7 +65,7 @@ class AGame:
 
     @abstractmethod
     def generate_game_status(self):
-        # generates game type specific status to be broadcasted to all players/host
+        # generates game type specific status to be broadcast to all players/host
         pass
 
     @abstractmethod
@@ -75,6 +76,10 @@ class AGame:
 
     @abstractmethod
     def start_timer(self):
+        pass
+
+    @abstractmethod
+    def log_stats(self):
         pass
 
     def broadcast_event(self, message: any, player_ids: Optional[Iterable[str]] = None):
@@ -90,6 +95,9 @@ class AGame:
                     socket.send(message)
 
     def finalize_game(self):
+        self.finalized = True
+
+    def finish_game(self):
         self.game_state = GameState.finished.name
 
     def update_status(self):
@@ -97,7 +105,8 @@ class AGame:
         self.broadcast_event(status)
 
     def register_player(self, player: Player):
-        self.players[player.player_id] = player
+        if not self.finalized:
+            self.players[player.player_id] = player
 
     def unregister_player(self, player: Player):
         del self.players[player.player_id]
@@ -117,10 +126,12 @@ class SIGame(AGame):
         super().__init__(server_manager)
         self.nominals: List[int] = SIGame.DEFAULT_NOMINALS
         self.nominal_index: int = 0
+        self.question_number = 0
         self.current_nominal: int = self.nominals[self.nominal_index]
         self.current_round = 1
         self.number_of_rounds = number_of_rounds
         self.allow_multiple_answers = False
+        self.game_stats = list()
 
         # resettable variables
         self.is_host_notified_on_first_signal: bool = False
@@ -132,8 +143,10 @@ class SIGame(AGame):
         self.responders: List[Player] = []
         self.failed_responders_ids: List[int] = []
         self.time_left: int = SIGame.DEFAULT_TIMER_COUNTDOWN
+        self.question_stats: Dict[str, int] = dict()
+        # keeps question stats: for each answered player it shows whether answer was correct (True) or not (False)
 
-    def reset(self):
+    def reset(self, is_after_incorrect_answer: bool = False):
         self.signals = dict()
         self.is_host_notified_on_first_signal = False
         self.first_signal_ts = None
@@ -142,10 +155,12 @@ class SIGame(AGame):
         self.failed_responders_ids.clear()
         self.responders.clear()
         self.time_left: int = SIGame.DEFAULT_TIMER_COUNTDOWN
+        if not is_after_incorrect_answer:
+            self.question_stats: Dict[str, int] = dict()
 
     def generate_game_status(self):
         players = list(self.players.values())
-        players.sort(key=lambda p: p.name)
+        players.sort(key=lambda pl: pl.name)
         status = dict()
         players_stat = list()
         for p in players:
@@ -156,11 +171,20 @@ class SIGame(AGame):
         status['question_state'] = self.question_state.name
         status['responders'] = self.responders
         status['time_left'] = self.time_left
+        status['finalized'] = 1 if self.finalized else 0
+        status["game_stats"] = self.game_stats
         result = dict(status=status)
         result = to_dict(result)
         return result
 
+    def log_stats(self):
+        stats = dict(question_number=self.question_number, player_stats=self.question_stats,
+                     nominal=self.current_nominal)
+        self.game_stats.append(stats)
+
     def roll_to_next_question(self):
+        self.log_stats()
+        self.question_number += 1
         self.nominal_index = (self.nominal_index + 1) % len(self.nominals)
         if self.current_round < self.number_of_rounds:
             if self.nominal_index == 0:
@@ -169,7 +193,7 @@ class SIGame(AGame):
             self.reset()
         else:
             self.reset()
-            self.finalize_game()
+            self.finish_game()
         self.update_status()
 
     def process_host_decision(self, decision: Union[HostDecision, str]):
@@ -187,10 +211,16 @@ class SIGame(AGame):
         else:
             if decision == HostDecision.accept:
                 responder.score += self.current_nominal
+                self.question_stats[responder.player_id] = 1
                 self.roll_to_next_question()
             else:
                 responder.score -= self.current_nominal
+                self.question_stats[responder.player_id] = -1
                 self.failed_responders_ids.append(responder.player_id)
+                self.is_accepting_signals = True
+                self.question_state = QuestionState.running
+                self.reset(is_after_incorrect_answer=True)
+                self.update_status()
 
     def process_signal(self, signal: Signal):
         player_id = signal.player_id
@@ -200,6 +230,9 @@ class SIGame(AGame):
 
         if not self.allow_multiple_answers and player_id in self.failed_responders_ids:
             # don't allow same person answer twice
+            return
+
+        if not self.is_accepting_signals:
             return
 
         if len(self.signals) == 0:
@@ -234,6 +267,7 @@ class SIGame(AGame):
                 self.is_host_notified_on_first_signal = True
             delta = now() - self.first_signal_ts
             if  delta > SIGame.DEFAULT_SIGNAL_ACCUMULATION_TIME * 1000:
+                self.is_accepting_signals = False
                 logger.info(f"signal accumulation time expired, notifying players")
                 self.question_state = QuestionState.answering
                 self._sort_signals()
