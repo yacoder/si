@@ -7,6 +7,8 @@ import uuid
 import random
 
 
+DEFAULT_NUMBER_OF_ROUNDS = 8
+
 def setup_logger():
     logging.basicConfig(
         level=logging.DEBUG,
