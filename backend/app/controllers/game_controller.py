@@ -46,10 +46,30 @@ def websocket_connection(ws, server_manager: SIServerManager):
             host_name = data.get("host_name")
             game = create_game(server_manager, host_name)
             server_manager.register_socket(game.host.player_id, ws)
-            result = dict(id=game.game_id, token=game.token, host={"name": game.host.name, "id": game.host.player_id})
+            result = dict(id=game.game_id, token=game.token, host={"name": game.host.name, "id": game.host.player_id, "token": game.token})
+        elif action == "host_reconnect":
+            # { "action": "host_reconnect",  "token": "ABCDEF" }
+            game_id = data.get("game_id")
+            game = server_manager.get_game_by_id(game_id)
+            if game is not None:
+                server_manager.register_socket(game.host.player_id, ws)
+                result = dict(id=game.game_id, token=game.token, host={"name": game.host.name, "id": game.host.player_id, "token": game.token})
+            else:
+                result = {"status": "error", "desc": "game not found"}
         elif action == "register":
             # { "action": "register", "name": "Vovochka", "token": "ABCDEF" }
-            player = Player(data.get("name"), data.get("token"))
+            game_id = None
+            if data.get("game_id") is None:
+                game = server_manager.get_game_by_id(data.get("game_token")) # this function works by token or ID
+                if game is not None:
+                    game_id = game.game_id
+            else:
+                game_id = data.get("game_id")
+            if game_id is None:
+                result = {"status": "error", "desc": "game id not found"}
+                ws.send(f"{result}")
+                continue
+            player = Player(data.get("name"), game_id, data.get("player_id", None))
             player = server_manager.register_player(player, ws)
             result = to_dict(player)
         elif action == "signal":

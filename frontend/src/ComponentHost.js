@@ -1,11 +1,11 @@
 // src/PrepareDataBasedOnURL.js
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import callAPI from './callAPI';
+import { handleHostLoop, generatePlayerSummary } from "./gameFlow";
 
 const POSSIBLE_STATES = {
     NOT_EXIST: 'NOT_EXIST',
-    CREATED: 'CREATED',
     STARTED: 'STARTED',
     ENDED: 'ENDED'
 
@@ -14,114 +14,84 @@ const POSSIBLE_STATES = {
 function ComponentHost() {
 
     const [gameState, setGameState] = useState(POSSIBLE_STATES.NOT_EXIST);
-    const [currentTournamentID, setCurrentTournamentID] = useState(null);
-    const [gameInviteCode, setGameInviteCode] = useState(null);
-    const [tournamentName, setTournamentName] = useState(null);
-    const [players, setPlayers] = useState([]);
     const [loading, setLoading] = useState(false);
 
-    const refreshCurrentTournament = useCallback(async (tournamentID) => {
-        tournamentID = tournamentID || currentTournamentID;
 
-        const tournamentDetails = await callAPI(`/api/tournament/${tournamentID}`, 'GET');
-        console.log('tournamentDetails', tournamentDetails);
+    const [name, setName] = useState("Test Game"); // Name input value (default: AAA)
+    const [hostData, setHostData] = useState(null); // Stores host data from the WebSocket
+    const [gameStatus, setGameStatus] = useState(null); // Stores game status updates from the WebSocket
+    const [reconnectGameID, setReconnectGameID] = useState(null); // Stores game ID for reconnection
+    const [gameID, setGameID] = useState(null); // Stores game ID for reconnection
 
-        setGameState(tournamentDetails?.tournament?.status);
-        setTournamentName(tournamentDetails?.tournament?.name);
-
-        if (tournamentDetails?.games?.length) {
-            const game = tournamentDetails.games[0];
-            setGameInviteCode(game?.token);
+    const switchStatus = (status) => {
+        if (status === 'host') {
+            setGameState(POSSIBLE_STATES.STARTED);
         }
+    };
+    const switchGameStatus = (status) => {
+        if (status === "OK") {
+            reloadGameStatus();
+        } else {
+            setGameStatus(status);
+            if (status?.game_id) {
+                setGameID(status.game_id);
+            }
+        }
+    };
+
+    const messanger = useRef(null);
 
 
-        setPlayers(tournamentDetails?.players);
-
-
-    }, [currentTournamentID]);
-
-    const loadData = useCallback(async () => {
+    const handleCreateGame = async (event) => {
         try {
-            setLoading(true);
-            const data = await callAPI(`/api/tournaments`, 'GET');
-            console.log('response', data);
+            const messanger_handler = handleHostLoop(name, setHostData, switchStatus, switchGameStatus, 'start')
+            messanger.current = messanger_handler; // Save the messanger function to state
 
-            if (data?.length) {
-                const lastTournament = data[data.length - 1];
-                if (lastTournament?.status !== POSSIBLE_STATES.ENDED) {
-                    setCurrentTournamentID(lastTournament.id);
-                    await refreshCurrentTournament(lastTournament.id);
+        } catch (error) {
+            console.error('Error setting data:', error);
+        }
+    }
 
-                } else {
-                    setGameState(POSSIBLE_STATES.ENDED);
-                }
-
-            } else {
-                setGameState(POSSIBLE_STATES.NOT_EXIST);
-
+    const handleReconnectGame = async (event) => {
+        try {
+            const data = await callAPI(`/api/host/game/${reconnectGameID}`);
+            if (data && data.status?.game_id) {
+                setGameID(data.status.game_id);
+                setGameStatus(data.status);
+                const messanger_handler = handleHostLoop(name, setHostData, switchStatus, switchGameStatus, 'reconnect', reconnectGameID)
+                messanger.current = messanger_handler; // Save the messanger function to state
             }
         } catch (error) {
-            console.error('Error fetching data:', error);
-        } finally {
-            setLoading(false);
+            console.error('Error setting data:', error);
         }
+    }
 
-    }, [refreshCurrentTournament]);
-
-
-
-
-    useEffect(() => {
-        const fetchInitialData = async () => loadData();
-        fetchInitialData();
-
-    }, [loadData]);
-
-    const handleCreateGame = async () => {
+    const reloadGameStatus = async () => {
         try {
-            await callAPI(`/api/tournament/create`, 'POST', {
-                tournament_data: {
-                    "name": tournamentName || "Tournament",
-                    "num_parts": 1,
-                    "num_rounds": 3,
-                    "type": "si",
-                    "status": POSSIBLE_STATES.CREATED,
-                }
-
-            });
-            await loadData();
-
+            const data = await callAPI(`/api/host/game/${gameID}`);
+            if (data && data.status?.game_id) {
+                setGameStatus(data.status);
+            }
         } catch (error) {
             console.error('Error setting data:', error);
         }
     }
 
-    const handleStartGame = async () => {
-        try {
 
-            await callAPI(`/api/tournament/${currentTournamentID}/update`, 'POST',
-                { tournament_data: { status: POSSIBLE_STATES.STARTED } });
-            await refreshCurrentTournament();
-
-        } catch (error) {
-            console.error('Error setting data:', error);
+    const sendMessage = useCallback((message) => {
+        if (messanger.current) {
+            message.game_id = gameID;
+            messanger.current(message);
+        } else {
+            console.error('Messanger is not initialized yet.');
         }
-    }
-
-    const handleLoadPlayers = async () => {
-        await refreshCurrentTournament();
-    }
+    }, [gameID, messanger]);
 
     const handleEndGame = async () => {
-        try {
-
-            await callAPI(`/api/tournament/${currentTournamentID}/update`, 'POST',
-                { tournament_data: { status: POSSIBLE_STATES.ENDED } });
-            await loadData();
-
-        } catch (error) {
-            console.error('Error setting data:', error);
-        }
+        sendMessage({
+            action: "finalize",
+        });
+        setGameState(POSSIBLE_STATES.ENDED);
     }
 
     return (
@@ -129,26 +99,24 @@ function ComponentHost() {
             <h2>Host Interface</h2>
             {(gameState === POSSIBLE_STATES.NOT_EXIST || gameState === POSSIBLE_STATES.ENDED) && (
                 <div>
-                    <h3>No Tournament Started</h3>
-                    <p>Click the button below to create a new tournament.</p>
+                    <h3>No Games Started</h3>
+                    <p>Click the button below to create a new game.</p>
                     <input
                         type="text"
-                        placeholder="Tournament Name"
-                        value={tournamentName}
-                        onChange={(e) => setTournamentName(e.target.value)}
+                        placeholder="Game Name"
+                        value={name}
+                        onChange={(e) => setName(e.target.value)}
                     />
-
-                    <button onClick={handleCreateGame}>Create Tournament/Game</button>
-                </div>
-            )}
-            {gameState === POSSIBLE_STATES.CREATED && (
-                <div>
-                    <h3>Tournament/Game Created</h3>
-                    <p>Tournament Name: {tournamentName}</p>
-                    <p>To invite players give them this code: {gameInviteCode}</p>
-
-                    <button onClick={handleLoadPlayers}>Load players (TODO: add socket to do it)</button>
-                    <button onClick={handleStartGame}>Start Game</button>
+                    <button onClick={handleCreateGame}>Create Game</button>
+                    <br />
+                    <p>Or reconnect to an existing game.</p>
+                    <input
+                        type="text"
+                        placeholder="Game ID"
+                        value={reconnectGameID}
+                        onChange={(e) => setReconnectGameID(e.target.value)}
+                    />
+                    <button onClick={handleReconnectGame}>Reconnect to existing game</button>
                 </div>
             )}
 
@@ -156,18 +124,50 @@ function ComponentHost() {
                 <div>
                     <h3>Game In Progress</h3>
 
-                    <button onClick={handleLoadPlayers}>Load players (TODO: add socket to do it)</button>
+                    <p>Game ID:{gameID}</p>
+                    <p>Host data:{JSON.stringify(hostData, null, 2)}</p>
+                    <p>Game data:{JSON.stringify(gameStatus, null, 2)}</p>
+
+                    {gameStatus?.question_state === "running" && (
+                        <div>
+                            <p>Playing for: {gameStatus.nominal}</p>
+                            <p>Time Remaining: {gameStatus.time_left} seconds</p>
+                            <button onClick={() => sendMessage({ action: "start_timer" })}>Start Timer</button>
+                        </div>
+                    )}
+
+                    {gameStatus?.question_state === "answering" && (
+                        <div>
+                            {gameStatus.responders?.length && (
+                                <div>
+                                    <p>Answering for: {gameStatus.nominal}</p>
+                                    <p>First button: {gameStatus.responders[0].name}</p>
+                                    <button onClick={() => sendMessage({
+                                        "action": "host_decision",
+                                        "host_decision": "accept"
+                                    })}>Correct</button>
+                                    <button onClick={() => sendMessage({
+                                        "action": "host_decision",
+                                        "host_decision": "decline"
+                                    })}>Wrong</button>
+                                    <button onClick={() => sendMessage({
+                                        "action": "host_decision",
+                                        "host_decision": "cancel"
+                                    })}>Cancel</button>
+                                </div>
+                            )}
+
+
+                        </div>
+                    )}
+
+
+
                     <button onClick={handleEndGame}>End Game</button>
                 </div>
             )}
 
-            {players.map((player, index) => (
-                <div key={index}>
-
-                    <p>{player.name}</p>
-
-                </div>
-            ))}
+            {generatePlayerSummary(gameStatus?.players, null)}
 
 
 

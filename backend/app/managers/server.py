@@ -68,6 +68,8 @@ class AServerManager:
 
     def get_socket_by_player_id(self, player_id: str):
         return self.player_id_to_socket.get(player_id)
+    
+
 
 
 class SIServerManager(AServerManager):
@@ -90,12 +92,12 @@ class SIServerManager(AServerManager):
             pass
         return game
 
-    def create_game(self, host_name=None) -> AGame:
+    def create_game(self, host_name=None, host_id=None) -> AGame:
         game = SIGame(self)
         self.games[game.game_id] = game
         self.game_token_to_id[game.token] = game.game_id
         host_name = host_name or "Host"
-        host = Player(host_name, game.token)
+        host = Player(host_name, game.token, host_id)
         game.register_host(host)
         return game
 

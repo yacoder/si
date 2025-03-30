@@ -1,6 +1,8 @@
 // src/PrepareDataBasedOnURL.js
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import callAPI from './callAPI';
+
+import { handlePlayerLoop, generatePlayerSummary } from "./gameFlow";
 
 const POSSIBLE_STATES = {
 
@@ -15,8 +17,11 @@ function ComponentPlayer() {
 
 
     const [gameState, setGameState] = useState(POSSIBLE_STATES.NOT_EXIST);
-    const [players, setPlayers] = useState([]);
-    const [tournamentName, setTournamentName] = useState(null);
+    const [gameID, setGameID] = useState(null);
+    const [savedPlayer, setSavedPlayer] = useState(null);
+    const [gameStatus, setGameStatus] = useState(null);
+
+
 
     const [loading, setLoading] = useState(false);
 
@@ -24,17 +29,10 @@ function ComponentPlayer() {
         try {
             setLoading(true);
             const data = await callAPI(`/api/player/game`);
-            if (data) {
-                setGameState(data.tournament?.status); // TODO: This should actually be game status
-                setTournamentName(data.tournament?.name);
-                if (data.players) {
-                    const player_token = sessionStorage.getItem('authToken');
-                    const player = data.players.find(player => player.player_token === player_token);
-                    if (player) {
-                        player.isCurrentPlayer = true;
-                    }
-                    setPlayers(data.players);
-                }
+            if (data && data.status?.game_id) {
+                setGameID(data.status.game_id);
+                setSavedPlayer(data.player);
+                setGameState(POSSIBLE_STATES.CREATED);
             } else {
                 setGameState(POSSIBLE_STATES.NOT_EXIST);
 
@@ -46,6 +44,8 @@ function ComponentPlayer() {
         }
     };
 
+    const messanger = useRef(null);
+
 
 
     useEffect(() => {
@@ -53,12 +53,34 @@ function ComponentPlayer() {
         fetchInitialData();
     }, []);
 
+    const handleSetGameStatus = (status) => {
+        setGameState(POSSIBLE_STATES.STARTED)
+        setGameStatus(status);
 
-
-
-    const handleLoadGames = async () => {
-        await loadData();
     }
+
+    const handleJoinGame = async (event) => {
+
+        if (!savedPlayer?.player_id || !savedPlayer?.name) {
+            console.log("Player ID or name is not available...");
+            return;
+        }
+
+
+        messanger.current = handlePlayerLoop(savedPlayer.name, gameID, handleSetGameStatus, savedPlayer.player_id);
+    }
+
+
+    const sendMessage = useCallback((message) => {
+        if (messanger.current) {
+            message.game_id = gameID;
+            messanger.current(message);
+        } else {
+            console.error('Messanger is not initialized yet.');
+        }
+    }, [gameID, messanger]);
+
+
 
 
     const logout = () => {
@@ -75,32 +97,42 @@ function ComponentPlayer() {
             <h2>Player Interface</h2>
 
 
-            {gameState === POSSIBLE_STATES.NOT_EXIST && <button onClick={() => logout()}>You have not been invited to any games</button>}
+            {gameState === POSSIBLE_STATES.NOT_EXIST && <button onClick={() => logout()}>Something broke</button>}
             {gameState === POSSIBLE_STATES.CREATED && (
                 <div>
-                    <h3>Tournament:{tournamentName}</h3>
-                    <h3>Game Created, waiting for it to start</h3>
 
 
-                    <button onClick={() => handleLoadGames()}>Load Game State (TODO: add socket to do it)</button>
+                    <button onClick={handleJoinGame}>Game created, click to join...</button>
+
+
+
                 </div>
             )}
+
             {gameState === POSSIBLE_STATES.STARTED && (
                 <div>
-                    <h3>Tournament:{tournamentName}</h3>
-                    <h3>Game In Progress</h3>
+                    <h3>Game ID: {gameID}</h3>
+                    <p>Game Status: {JSON.stringify(gameStatus)}</p>
 
-                    <button onClick={() => handleLoadGames()}>Load Game State (TODO: add socket to do it)</button>
-                </div>
-            )}
+                    {gameStatus?.question_state === "running" && (
+                        <div>
+                            <p>Playing for: {gameStatus.nominal}</p>
+                            <p>Time Remaining: {gameStatus.time_left} seconds</p>
+                            <button onClick={() => sendMessage({
+                                action: "signal",
+                                player_id: savedPlayer.player_id,
+                                local_ts: Date.now(),
 
-            {players.map((player, index) => (
-                <div key={index}>
+                            })}>ANSWER!!</button>
+                        </div>
+                    )}
 
-                    <p>{player.isCurrentPlayer ? "*" : ""}{player.name} : {player.score}</p>
-                </div>
-            ))}
+                    <button onClick={() => logout()}>Quit game</button>
+                </div>)}
+
             {gameState === POSSIBLE_STATES.ENDED && <button onClick={() => logout()}>Game over</button>}
+
+            {generatePlayerSummary(gameStatus?.players, savedPlayer?.player_id)}
 
 
 
