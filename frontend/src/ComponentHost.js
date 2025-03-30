@@ -124,9 +124,7 @@ function ComponentHost() {
                 <div>
                     <h3>Game In Progress</h3>
 
-                    <p>Game ID:{gameID}</p>
-                    <p>Host data:{JSON.stringify(hostData, null, 2)}</p>
-                    <p>Game data:{JSON.stringify(gameStatus, null, 2)}</p>
+                    <p>Game ID:{gameID}, Token: {hostData.token}</p>
 
                     {gameStatus?.question_state === "running" && (
                         <div>

@@ -12,8 +12,8 @@ class Player:
         self.lag = 0  # used to show delay when signal was received
 
 class Signal:
-    def __init__(self, player_id: str, server_ts: int, client_ts: int):
+    def __init__(self, player_id: str, server_ts, client_ts, adjusted_ts):
         self.player_id = player_id
         self.server_ts = server_ts
         self.client_ts = client_ts
-        self.adjusted_ts = None
+        self.adjusted_ts = adjusted_ts

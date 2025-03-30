@@ -2,12 +2,24 @@ import React, { useState } from 'react';
 import axios from 'axios';
 import Cookies from 'js-cookie';
 
+function generateRandomString(length) {
+  const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+  let result = '';
+
+  for (let i = 0; i < length; i++) {
+    const randomIndex = Math.floor(Math.random() * characters.length);
+    result += characters[randomIndex];
+  }
+
+  return result;
+}
+
 function LoginForm({ onLogin }) {
 
     const [userToken, setUserToken] = useState('');
-    const [gameToken, setGameToken] = useState('');
+    const [gameToken, setGameToken] = useState('10001');
     const [hostName, setHostName] = useState('');
-    const [playerName, setPlayerName] = useState('');
+    const [playerName, setPlayerName] = useState(generateRandomString(5));
     const [hostEmail, setHostEmail] = useState('');
 
     const [error, setError] = useState('');
@@ -69,7 +81,7 @@ function LoginForm({ onLogin }) {
                 placeholder="Enter Player Name"
             />
             <input
-                type="password"
+                type="text"
                 value={gameToken}
                 onChange={(e) => setGameToken(e.target.value)}
                 placeholder="Enter Game Token"

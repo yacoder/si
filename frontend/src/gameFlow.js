@@ -14,8 +14,8 @@ export const generatePlayerSummary = (players, player_id) => {
                 const isCurrentPlayer = player.player_id === player_id;
                 return (
                     <div key={player.player_id}>
-                        {isCurrentPlayer && (<strong >{player.name} (You) : {player.score}</strong>)}
-                        {!isCurrentPlayer && (<p >{player.name} (You) : {player.score}</p>)}
+                        {isCurrentPlayer && (<strong >{player.name}: {player.score}</strong>)}
+                        {!isCurrentPlayer && (<p >{player.name}: {player.score}</p>)}
                     </div>
                 )
 
@@ -76,6 +76,12 @@ export const handleHostLoop = (name, setHostData, setScreen, setGameStatus, scre
                     console.log("setting status", data.status);
                     setGameStatus(data.status); // Update game status
                 }
+
+                if (data.action && data.action == "offset_check") {
+                    console.log("checking offset for host", data.offset_check);
+                    data['client_ts'] = Date.now();
+                    socket.send(JSON.stringify(data));
+                }
             } catch (error) {
                 console.error("Error processing incoming status update:", error);
             }
@@ -133,11 +139,17 @@ export const handlePlayerLoop = (name, gameID, setGameStatus, player_id = null, 
             data = data.replace(/'/g, '"');
             data = JSON.parse(data);
 
-
             try {
                 if (data.status) {
                     console.log("setting status", data.status);
                     setGameStatus(data.status); // Update game status
+                }
+
+                if (data.action && data.action == "offset_check") {
+                    console.log("checking offset for client");
+                    data['client_ts'] = Date.now();
+                    console.log("sending response", data);
+                    socket.send(JSON.stringify(data));
                 }
             } catch (error) {
                 console.error("Error processing incoming status update:", error);
