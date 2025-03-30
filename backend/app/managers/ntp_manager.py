@@ -38,6 +38,9 @@ class NtpManager:
 
     def get_offset(self):
         offset_array = [x.calc_theta() for x in self.monitor if x.server_out_ts != 0]
+        if len(offset_array) == 0:
+            return 0
+
         offset = sum(offset_array) / len(offset_array)
         return offset
 
@@ -70,7 +73,7 @@ class NtpServer:
 
 
     def _monitor(self):
-        for player_id in self.player_ids:
+        for player_id in self.player_ids.copy():
             socket = self.server_manager.get_socket_by_player_id(player_id)
             if socket is not None and socket.connected is True:
                 ping_message = dict(action="offset_check", player_id=player_id, server_out_ts=now())

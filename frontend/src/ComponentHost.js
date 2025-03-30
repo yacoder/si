@@ -96,10 +96,10 @@ function ComponentHost() {
     }
 
     return (
-        <div>
+        <div class="container">
             <h2>Host Interface</h2>
             {(gameState === POSSIBLE_STATES.NOT_EXIST || gameState === POSSIBLE_STATES.ENDED) && (
-                <div>
+                <div class="container">
                     <h3>No Games Started</h3>
                     <p>Click the button below to create a new game.</p>
                     <input
@@ -122,13 +122,13 @@ function ComponentHost() {
             )}
 
             {gameState === POSSIBLE_STATES.STARTED && (
-                <div>
+                <div class="container">
                     <h3>Game In Progress</h3>
 
                     <p>Game ID:{gameID}, Token: {hostData.token}</p>
 
                     {gameStatus?.question_state === "running" && (
-                        <div>
+                        <div class="container">
                             <p>Playing for: {gameStatus.nominal}</p>
                             <p>Time Remaining: {gameStatus.time_left} seconds</p>
                             <button onClick={() => sendMessage({ action: "start_timer" })}>Start Timer</button>
@@ -136,9 +136,9 @@ function ComponentHost() {
                     )}
 
                     {gameStatus?.question_state === "answering" && (
-                        <div>
+                        <div class="container">
                             {gameStatus.responders?.length && (
-                                <div>
+                                <div class="container">
                                     <p>Answering for: {gameStatus.nominal}</p>
                                     <p>First button: {gameStatus.responders[0].name}</p>
                                     <button onClick={() => sendMessage({
