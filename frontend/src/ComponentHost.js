@@ -1,8 +1,9 @@
 // src/PrepareDataBasedOnURL.js
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
+import Cookies from 'js-cookie';
 import callAPI from './callAPI';
-import { handleHostLoop, generatePlayerSummary } from "./gameFlow";
+import { handleLoop as handleHostLoop, generatePlayerSummary } from "./gameFlow";
 
 const POSSIBLE_STATES = {
     NOT_EXIST: 'NOT_EXIST',
@@ -23,6 +24,7 @@ function ComponentHost() {
     const [reconnectGameID, setReconnectGameID] = useState(null); // Stores game ID for reconnection
     const [gameID, setGameID] = useState(null); // Stores game ID for reconnection
 
+
     const switchStatus = (status) => {
         if (status === 'host') {
             setGameState(POSSIBLE_STATES.STARTED);
@@ -38,13 +40,12 @@ function ComponentHost() {
             }
         }
     };
-
     const messanger = useRef(null);
 
 
     const handleCreateGame = async (event) => {
         try {
-            const messanger_handler = handleHostLoop(name, setHostData, switchStatus, switchGameStatus, 'start')
+            const messanger_handler = handleHostLoop(name, setHostData, switchStatus, switchGameStatus, 'start', null)
             messanger.current = messanger_handler; // Save the messanger function to state
 
         } catch (error) {
@@ -58,7 +59,7 @@ function ComponentHost() {
             if (data && data.status?.game_id) {
                 setGameID(data.status.game_id);
                 setGameStatus(data.status);
-                const messanger_handler = handleHostLoop(name, setHostData, switchStatus, switchGameStatus, 'reconnect', reconnectGameID)
+                const messanger_handler = handleHostLoop(name, setHostData, switchStatus, switchGameStatus, 'reconnect', null, reconnectGameID)
                 messanger.current = messanger_handler; // Save the messanger function to state
             }
         } catch (error) {
