@@ -47,11 +47,12 @@ class AServerManager:
         else:
             player_id = player.player_id
         game = self.get_game_by_player_id(player_id)
-        game.unregister_player(player)
+        if game is not None:
+            game.unregister_player(player)
         self.ntp_manager.unregister_player(player_id)
         del self.player_id_to_game[player_id]
         socket = self.get_socket_by_player_id(player_id)
-        if socket is not None:
+        if socket is not None and socket.connected is True:
             socket.close()
         del self.player_id_to_socket[player_id]
 

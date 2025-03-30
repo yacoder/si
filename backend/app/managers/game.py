@@ -117,7 +117,12 @@ class AGame:
             self.players[player.player_id] = player
 
     def unregister_player(self, player: Player):
-        del self.players[player.player_id]
+        if player is not None:
+            if isinstance(player, str):
+                player_id = player
+            else:
+                player_id = player.player_id
+            del self.players[player_id]
 
     def register_host(self, player: Player):
         self.host = player

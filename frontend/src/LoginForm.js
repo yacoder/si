@@ -18,6 +18,7 @@ function LoginForm({ onLogin }) {
 
     const [userToken, setUserToken] = useState('');
     const [gameToken, setGameToken] = useState('10001');
+    const [roundsNum, setRoundsNum] = useState(8);
     const [hostName, setHostName] = useState('');
     const [playerName, setPlayerName] = useState(generateRandomString(5));
     const [hostEmail, setHostEmail] = useState('');
@@ -53,42 +54,52 @@ function LoginForm({ onLogin }) {
 
     return (
         <form onSubmit={handleSubmit}>
-            <h2>Login As Host</h2>
-            <input
-                type="password"
+            <div class="container">
+                <h2>Начать Новую Игру</h2>
+                <input
+                type="text"
                 value={userToken}
                 onChange={(e) => setUserToken(e.target.value)}
                 placeholder="Enter User Token"
             />
-            <input
+
+                <input
                 type="text"
                 value={hostName}
                 onChange={(e) => setHostName(e.target.value)}
-                placeholder="If first login: Enter Host Name"
+                placeholder="Имя Ведущего"
             />
             <input
                 type="email"
                 value={hostEmail}
                 onChange={(e) => setHostEmail(e.target.value)}
-                placeholder="If first login: Enter Host Email"
+                placeholder="Email"
             />
-            <button type="submit">Login</button>
-            <h2>Login As Player</h2>
             <input
                 type="text"
-                value={playerName}
-                onChange={(e) => setPlayerName(e.target.value)}
-                placeholder="Enter Player Name"
+                value={roundsNum}
+                onChange={(e) => setUserToken(e.target.value)}
+                placeholder="Количество тем"
             />
-            <input
+                <button type="submit">Start Game</button>
+            </div>
+
+            <div class="container">
+                <h2>Присоединиться к игре</h2>
+                <input
+                    type="text"
+                    value={playerName}
+                    onChange={(e) => setPlayerName(e.target.value)}
+                    placeholder="Имя Игрока"
+                />
+                <input
                 type="text"
                 value={gameToken}
                 onChange={(e) => setGameToken(e.target.value)}
-                placeholder="Enter Game Token"
-
-            />
-            <button type="submit">Login</button>
-            {error && <p>{error}</p>}
+                placeholder="Токен Игры"
+                />
+                <button  type="submit">Присоединиться</button>
+            </div>
         </form>
     );
 }
