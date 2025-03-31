@@ -26,11 +26,12 @@ export const generatePlayerSummary = (players, player_id) => {
 
 
 
-export const handleLoop = (name, setHostData, setScreen, setGameStatus, screen, host_or_player_id = null, game_id = null, host = null) => {
+export const handleLoop = (name, setHostData, setScreen, setGameStatus, screen,
+    host_or_player_id = null, game_id = null, additional_game_params = {}, url = null) => {
 
 
     // Open a WebSocket connection
-    const socket = new WebSocket(calculateSocketFromHost(host));
+    const socket = new WebSocket(calculateSocketFromHost(url));
 
     socket.onopen = () => {
         console.log("WebSocket connection opened");
@@ -43,6 +44,7 @@ export const handleLoop = (name, setHostData, setScreen, setGameStatus, screen, 
                 action: "start_game",
                 host_name: name,
                 host_id: host_or_player_id,
+                ...additional_game_params,
             };
             socket.send(JSON.stringify(message));
             console.log("Message sent:", message);
@@ -118,14 +120,14 @@ export const handleLoop = (name, setHostData, setScreen, setGameStatus, screen, 
 
 };
 
-export const handleSubmitHost = (event, name, setHostData, setScreen, setGameStatus, screen, host_id = null, host = null) => {
+export const handleSubmitHost = (event, name, setHostData, setScreen, setGameStatus, screen, host_id = null, additional_game_params = {}, url = null) => {
     event.preventDefault(); // Prevent default form submission behavior
-    handleLoop(name, setHostData, setScreen, setGameStatus, screen, host_id, host);
+    handleLoop(name, setHostData, setScreen, setGameStatus, screen, host_id, null, additional_game_params, url);
     return;
 }
 
 
-export const handlePlayerLoop = (name, game_id, setGameStatus, player_id = null, host = null) => {
-    return handleLoop(name, () => { }, () => { }, setGameStatus, "player_start", player_id, game_id, host);
+export const handlePlayerLoop = (name, game_id, setGameStatus, player_id = null, url = null) => {
+    return handleLoop(name, () => { }, () => { }, setGameStatus, "player_start", player_id, game_id, {}, url);
 };
 

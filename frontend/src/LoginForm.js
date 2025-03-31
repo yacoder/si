@@ -20,7 +20,7 @@ function LoginForm({ onLogin }) {
 
     const [userToken, setUserToken] = useState('');
     const [gameToken, setGameToken] = useState('10001');
-    const [roundsNum, setRoundsNum] = useState(8);
+    const [numRounds, setNumRounds] = useState(8);
     const [hostName, setHostName] = useState('');
     const [playerName, setPlayerName] = useState(generateRandomString(5));
     const [hostEmail, setHostEmail] = useState('');
@@ -46,6 +46,7 @@ function LoginForm({ onLogin }) {
                 user_data: {
                     name: hostName,
                     email: hostEmail,
+                    rounds_num: numRounds,
                     simple_game_start: SIMPLE_LOGIN_FORM,
                 },
             });
@@ -53,7 +54,7 @@ function LoginForm({ onLogin }) {
             const { token } = response.data;
             Cookies.set('authToken', token);
             sessionStorage.setItem('authToken', token);
-            onLogin({ startGame: SIMPLE_LOGIN_FORM });
+            onLogin({ startGame: SIMPLE_LOGIN_FORM, numRounds: numRounds });
         } catch (err) {
 
             setError('Invalid credentials');
@@ -89,8 +90,8 @@ function LoginForm({ onLogin }) {
                 )}
                 <input
                     type="text"
-                    value={roundsNum}
-                    onChange={(e) => setUserToken(e.target.value)}
+                    value={numRounds}
+                    onChange={(e) => setNumRounds(e.target.value)}
                     placeholder="Количество тем"
                 />
                 <button type="submit">Start Game</button>
