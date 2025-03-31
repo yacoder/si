@@ -6,15 +6,18 @@ import callAPI from './callAPI';
 import { handleLoop as handleHostLoop, generatePlayerSummary } from "./gameFlow";
 
 const POSSIBLE_STATES = {
+    AUTO_START: 'AUTO_START',
     NOT_EXIST: 'NOT_EXIST',
     STARTED: 'STARTED',
     ENDED: 'ENDED'
 
 }
 
-function ComponentHost() {
 
-    const [gameState, setGameState] = useState(POSSIBLE_STATES.NOT_EXIST);
+
+function ComponentHost({ startGame }) {
+
+    const [gameState, setGameState] = useState(startGame ? POSSIBLE_STATES.AUTO_START : POSSIBLE_STATES.NOT_EXIST);
     const [loading, setLoading] = useState(false);
 
 
@@ -23,6 +26,8 @@ function ComponentHost() {
     const [gameStatus, setGameStatus] = useState(null); // Stores game status updates from the WebSocket
     const [reconnectGameID, setReconnectGameID] = useState(null); // Stores game ID for reconnection
     const [gameID, setGameID] = useState(null); // Stores game ID for reconnection
+
+
 
 
     const switchStatus = (status) => {
@@ -43,7 +48,8 @@ function ComponentHost() {
     const messanger = useRef(null);
 
 
-    const handleCreateGame = async (event) => {
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    const handleCreateGame = async () => {
         try {
             const messanger_handler = handleHostLoop(name, setHostData, switchStatus, switchGameStatus, 'start', null)
             messanger.current = messanger_handler; // Save the messanger function to state
@@ -94,6 +100,15 @@ function ComponentHost() {
         });
         setGameState(POSSIBLE_STATES.ENDED);
     }
+
+    // call handleCreateGame when startGame is true
+    useEffect(() => {
+        if (gameState === POSSIBLE_STATES.AUTO_START) {
+            setGameState(POSSIBLE_STATES.NOT_EXIST);
+            setName("Default Game")
+            handleCreateGame();
+        }
+    }, [gameState, handleCreateGame]);
 
     return (
         <div class="container">
