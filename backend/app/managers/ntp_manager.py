@@ -77,7 +77,10 @@ class NtpServer:
             socket = self.server_manager.get_socket_by_player_id(player_id)
             if socket is not None and socket.connected is True:
                 ping_message = dict(action="offset_check", player_id=player_id, server_out_ts=now())
-                socket.send(ping_message)
+                try:
+                    socket.send(ping_message)
+                except Exception as e:
+                    logger.error(f"Error: {e}")
             # disabled teporarily to allow reconnect
             # else:
             #    self.server_manager.unregister_player(player_id)

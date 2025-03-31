@@ -63,61 +63,63 @@ function LoginForm({ onLogin }) {
     };
 
     return (
-        <form onSubmit={handleSubmit}>
-            <div class="container">
-                <h2>Начать Новую Игру</h2>
-                {!SIMPLE_LOGIN_FORM && (
+        <div class="parent">
+            <form class="login-form" onSubmit={handleSubmit}>
+                <div>
+                    <h2>Начать Новую Игру</h2>
+                    {!SIMPLE_LOGIN_FORM && (
+                        <input
+                            type="text"
+                            value={userToken}
+                            onChange={(e) => setUserToken(e.target.value)}
+                            placeholder="Enter User Token"
+                        />
+                    )}
                     <input
                         type="text"
-                        value={userToken}
-                        onChange={(e) => setUserToken(e.target.value)}
-                        placeholder="Enter User Token"
+                        value={hostName}
+                        onChange={(e) => setHostName(e.target.value)}
+                        placeholder="Имя Ведущего"
                     />
-                )}
-                <input
-                    type="text"
-                    value={hostName}
-                    onChange={(e) => setHostName(e.target.value)}
-                    placeholder="Имя Ведущего"
-                />
-                {!SIMPLE_LOGIN_FORM && (
+                    {!SIMPLE_LOGIN_FORM && (
+                        <input
+                            type="email"
+                            value={hostEmail}
+                            onChange={(e) => setHostEmail(e.target.value)}
+                            placeholder="Email"
+                        />
+                    )}
                     <input
-                        type="email"
-                        value={hostEmail}
-                        onChange={(e) => setHostEmail(e.target.value)}
-                        placeholder="Email"
+                        type="text"
+                        value={numRounds}
+                        onChange={(e) => setNumRounds(e.target.value)}
+                        placeholder="Количество тем"
                     />
-                )}
-                <input
-                    type="text"
-                    value={numRounds}
-                    onChange={(e) => setNumRounds(e.target.value)}
-                    placeholder="Количество тем"
-                />
-                <button type="submit">Start Game</button>
-            </div>
+                    <button type="submit">Start Game</button>
+                </div>
 
-            <div class="container">
-                <h2>Присоединиться к игре</h2>
-                <input
-                    type="text"
-                    value={playerName}
-                    onChange={(e) => setPlayerName(e.target.value)}
-                    placeholder="Имя Игрока"
-                />
-                <input
-                    type="text"
-                    value={gameToken}
-                    onChange={(e) => setGameToken(e.target.value)}
-                    placeholder="Токен Игры"
-                />
-                <button type="submit">Присоединиться</button>
-            </div>
+                <div>
+                    <h2>Присоединиться к игре</h2>
+                    <input
+                        type="text"
+                        value={playerName}
+                        onChange={(e) => setPlayerName(e.target.value)}
+                        placeholder="Имя Игрока"
+                    />
+                    <input
+                        type="text"
+                        value={gameToken}
+                        onChange={(e) => setGameToken(e.target.value)}
+                        placeholder="Токен Игры"
+                    />
+                    <button type="submit">Присоединиться</button>
+                </div>
 
-            <div class="container">
-                {error && <p style={{ color: 'red' }}>{error}</p>}
-            </div>
-        </form>
+                <div>
+                    {error && <p style={{ color: 'red' }}>{error}</p>}
+                </div>
+            </form>
+          </div>
     );
 }
 

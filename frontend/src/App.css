@@ -44,13 +44,13 @@ body {
     align-items: center;
     justify-content: center;
     height: 100vh;
-    margin: 0;
-    background-color: #f4f4f4;
+    margin: 10px;
+    background-color: black;
 }
 .container {
     width: 100%;
     padding: 20px;
-    background: white;
+    background: black;
     box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
     margin-bottom: 20px;
     text-align: center;
@@ -68,8 +68,28 @@ th, td {
     padding: 5px;
     text-align: center;
 }
-.score-table td {
+.score {
+    font-size: 2em;
     font-weight: bold;
+}
+.positive-score { color: darkgreen; }
+.negative-score { color: red; }
+.plus { color: red; font-weight: bold; font-size: 2.25em; }
+.minus { color: blue; font-weight: bold; font-size: 2.25em; }
+.dot { color: black; font-weight: bold; }
+.round-button {
+    width: 240px;
+    height: 240px;
+    background-color: #28a745;
+    border-radius: 50%;
+    border: none;
+    cursor: pointer;
+    margin-top: 20px;
+    font-size: 36px;
+    font-weight: bold;
+    color: white;
+    text-shadow: 2px 2px 5px rgba(0, 0, 0, 0.5);
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.4);
 }
 .round-button {
     width: 240px;
@@ -95,6 +115,27 @@ input, button {
     padding: 10px;
     font-size: 16px;
 }
+
+
+.parent {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh; /* Full viewport height */
+  background-color: black;
+}
+
+.login-form {
+  max-width: 800px;
+  width: 100%;
+  padding: 20px;
+  background: black;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+  border-radius: 8px;
+  text-align: center;
+}
+
+
 button {
     background-color: #28a745;
     color: white;
