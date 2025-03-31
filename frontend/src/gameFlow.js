@@ -3,8 +3,12 @@ function calculateSocketFromHost(host) {
         const hostParts = host.split("/");
         if (hostParts.length >= 3) {
             const hostName = hostParts[2];
+            let protocol = "ws:";
+            if (hostParts[0] === "https:") {
+                protocol = "wss:";
+            };
             if (hostName) {
-                return `ws://${hostName}/ws`;
+                return `${protocol}//${hostName}/ws`;
             }
         }
     }
