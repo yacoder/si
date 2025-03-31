@@ -53,7 +53,9 @@ function ComponentHost({ startGame, autostartNumRounds }) {
     const handleCreateGame = async () => {
         try {
             const messanger_handler = handleHostLoop(name, setHostData, switchStatus, switchGameStatus, 'start', null, null,
-                { number_of_rounds: numRounds });
+                { number_of_rounds: numRounds },
+                window.location.href
+            );
             messanger.current = messanger_handler; // Save the messanger function to state
 
         } catch (error) {
@@ -67,7 +69,10 @@ function ComponentHost({ startGame, autostartNumRounds }) {
             if (data && data.status?.game_id) {
                 setGameID(data.status.game_id);
                 setGameStatus(data.status);
-                const messanger_handler = handleHostLoop(name, setHostData, switchStatus, switchGameStatus, 'reconnect', null, reconnectGameID)
+                const messanger_handler = handleHostLoop(name, setHostData, switchStatus, switchGameStatus, 'reconnect', null, reconnectGameID,
+                    {},
+                    window.location.href
+                )
                 messanger.current = messanger_handler; // Save the messanger function to state
             }
         } catch (error) {
