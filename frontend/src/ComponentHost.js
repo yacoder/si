@@ -121,10 +121,10 @@ function ComponentHost({ startGame, autostartNumRounds }) {
     }, [gameState, handleCreateGame]);
 
     return (
-        <div class="container">
+        <div>
             <h2>Host Interface</h2>
             {(gameState === POSSIBLE_STATES.NOT_EXIST || gameState === POSSIBLE_STATES.ENDED) && (
-                <div class="container">
+                <div>
                     <h3>No Games Started</h3>
                     <p>Click the button below to create a new game.</p>
                     <input
@@ -147,13 +147,13 @@ function ComponentHost({ startGame, autostartNumRounds }) {
             )}
 
             {gameState === POSSIBLE_STATES.STARTED && (
-                <div class="container">
+                <div>
                     <h3>Game In Progress</h3>
 
                     <p>Game ID:{gameID}, Token: {hostData.token}</p>
 
                     {gameStatus?.question_state === "running" && (
-                        <div class="container">
+                        <div>
                             <p>Playing for: {gameStatus.nominal}</p>
                             <p>Time Remaining: {gameStatus.time_left} seconds</p>
                             <button onClick={() => sendMessage({ action: "start_timer" })}>Start Timer</button>
@@ -161,9 +161,9 @@ function ComponentHost({ startGame, autostartNumRounds }) {
                     )}
 
                     {gameStatus?.question_state === "answering" && (
-                        <div class="container">
+                        <div>
                             {gameStatus.responders?.length && (
-                                <div class="container">
+                                <div>
                                     <p>Answering for: {gameStatus.nominal}</p>
                                     <p>First button: {gameStatus.responders[0].name}</p>
                                     <button onClick={() => sendMessage({

@@ -137,7 +137,7 @@ class AGame:
 class SIGame(AGame):
 
     DEFAULT_SIGNAL_ACCUMULATION_TIME = 1  # seconds
-    DEFAULT_TIMER_COUNTDOWN = 5  # seconds
+    DEFAULT_TIMER_COUNTDOWN = 6  # seconds
     DEFAULT_NOMINALS = [10, 20, 30,40, 50]
 
     def __init__(self, server_manager, number_of_rounds=DEFAULT_NUMBER_OF_ROUNDS):

@@ -127,16 +127,21 @@ function ComponentPlayer({ startGame }) {
                         <div>
                             <p>Playing for: {gameStatus.nominal}</p>
                             <p>Time Remaining: {gameStatus.time_left} seconds</p>
-                            <button onClick={() => sendMessage({
+                            <button class="round-button" onClick={() => sendMessage({
                                 action: "signal",
                                 player_id: savedPlayer.player_id,
                                 local_ts: Date.now(),
 
-                            })}>ANSWER!!</button>
+                            })}> {gameStatus.time_left <5 ? gameStatus.time_left : "ANSWER"}</button>
                         </div>
                     )}
 
+                    {gameStatus?.question_state === "false" &&
+                    (
                     <button onClick={() => logout()}>Quit game</button>
+                    )
+                    }
+
                 </div>)}
 
             {gameState === POSSIBLE_STATES.ENDED && <button onClick={() => logout()}>Game over</button>}
