@@ -36,7 +36,9 @@ function ComponentPlayer({ startGame }) {
                 if (startGame) {
                     console.log("Attempting to auto-join");
                     setGameState(POSSIBLE_STATES.AUTO_JOIN);
-                    messanger.current = handlePlayerLoop(data.player.name, data.status.game_id, handleSetGameStatus, data.player.player_id);
+                    messanger.current = handlePlayerLoop(data.player.name, data.status.game_id, handleSetGameStatus, data.player.player_id,
+                        window.location.href
+                    );
                 } else {
                     setGameState(POSSIBLE_STATES.CREATED);
                 }
@@ -107,7 +109,8 @@ function ComponentPlayer({ startGame }) {
             {gameState === POSSIBLE_STATES.NOT_EXIST && <button onClick={() => logout()}>Something broke</button>}
             {gameState === POSSIBLE_STATES.CREATED && (
                 <div>
-                    <button onClick={handleJoinGame}>Game created, click to join...</button>
+                    <button onClick={handleJoinGame}>Reconnect to game...</button>
+                    <button onClick={() => logout()}>Quit game</button>
                 </div>
             )}
 

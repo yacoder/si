@@ -1,10 +1,14 @@
 function calculateSocketFromHost(host) {
-    if (!host) {
-        return "ws://127.0.0.1:4000/ws";
+    if (host) {
+        const hostParts = host.split("/");
+        if (hostParts.length >= 3) {
+            const hostName = hostParts[2];
+            if (hostName) {
+                return `ws://${hostName}/ws`;
+            }
+        }
     }
-    const hostParts = host.split("/");
-    const hostName = hostParts[2]; // Extract the hostname from the URL
-    return `ws://${hostName}/ws`;
+    return "ws://127.0.0.1:4000/ws";
 }
 
 export const generatePlayerSummary = (players, player_id) => {
