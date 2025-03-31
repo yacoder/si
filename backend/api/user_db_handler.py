@@ -16,13 +16,17 @@ class UserDataProvider:
         existing_user = self.data_provider.lookup_one_by_field("users", "token", user_token)
         if existing_user:
             return existing_user
-        # check if the user already exists by email if email is provided
-        if not user_data or not user_data.get("email"):
-            raise ValueError("User data is required")
-        existing_user = self.data_provider.lookup_one_by_field("users", "email", user_data["email"])
-        if existing_user:
-            return existing_user
-        if not validate_record_for_mandatory_fields(user_data, ["email", "name"]):
+        required_fields = ["name"]
+        if user_data.get("simple_game_start") is not True:
+            if not user_data or not user_data.get("email"):
+                raise ValueError("User data is required")
+            existing_user = self.data_provider.lookup_one_by_field("users", "email", user_data["email"])
+            if existing_user:
+                return existing_user
+            required_fields.append("email")
+            
+       
+        if not validate_record_for_mandatory_fields(user_data, required_fields):
             raise ValueError("User data is missing mandatory fields")
         # Create a new user if it doesn't exist
         record = {

@@ -9,7 +9,7 @@ function calculateSocketFromHost(host) {
 
 export const generatePlayerSummary = (players, player_id) => {
     return (
-        <div>
+        <div class="player_summary">
             {players?.map((player) => {
                 const isCurrentPlayer = player.player_id === player_id;
                 return (

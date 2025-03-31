@@ -5,7 +5,7 @@ import callAPI from './callAPI';
 import { handlePlayerLoop, generatePlayerSummary } from "./gameFlow";
 
 const POSSIBLE_STATES = {
-
+    AUTO_JOIN: 'AUTO_JOIN',
     NOT_EXIST: 'NOT_EXIST',
     CREATED: 'CREATED',
     STARTED: 'STARTED',
@@ -13,10 +13,10 @@ const POSSIBLE_STATES = {
 
 }
 
-function ComponentPlayer() {
+function ComponentPlayer({ startGame }) {
 
 
-    const [gameState, setGameState] = useState(POSSIBLE_STATES.NOT_EXIST);
+    const [gameState, setGameState] = useState(startGame ? POSSIBLE_STATES.AUTO_JOIN : POSSIBLE_STATES.NOT_EXIST);
     const [gameID, setGameID] = useState(null);
     const [savedPlayer, setSavedPlayer] = useState(null);
     const [gameStatus, setGameStatus] = useState(null);
@@ -25,14 +25,21 @@ function ComponentPlayer() {
 
     const [loading, setLoading] = useState(false);
 
-    const loadData = async () => {
+    const loadData = useCallback(async () => {
         try {
             setLoading(true);
             const data = await callAPI(`/api/player/game`);
             if (data && data.status?.game_id) {
                 setGameID(data.status.game_id);
                 setSavedPlayer(data.player);
-                setGameState(POSSIBLE_STATES.CREATED);
+
+                if (startGame) {
+                    console.log("Attempting to auto-join");
+                    setGameState(POSSIBLE_STATES.AUTO_JOIN);
+                    messanger.current = handlePlayerLoop(data.player.name, data.status.game_id, handleSetGameStatus, data.player.player_id);
+                } else {
+                    setGameState(POSSIBLE_STATES.CREATED);
+                }
             } else {
                 setGameState(POSSIBLE_STATES.NOT_EXIST);
 
@@ -42,7 +49,7 @@ function ComponentPlayer() {
         } finally {
             setLoading(false);
         }
-    };
+    }, [startGame]);
 
     const messanger = useRef(null);
 
@@ -51,7 +58,7 @@ function ComponentPlayer() {
     useEffect(() => {
         const fetchInitialData = async () => loadData();
         fetchInitialData();
-    }, []);
+    }, [loadData]);
 
     const handleSetGameStatus = (status) => {
         setGameState(POSSIBLE_STATES.STARTED)
@@ -109,7 +116,7 @@ function ComponentPlayer() {
                     <h3>Game ID: {gameID}</h3>
                     {gameStatus?.question_state === "fake" && (
                         <div>
-                        <p>Game Status: {JSON.stringify(gameStatus)}</p>
+                            <p>Game Status: {JSON.stringify(gameStatus)}</p>
                         </div>
                     )}
 

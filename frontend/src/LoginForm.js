@@ -3,16 +3,18 @@ import axios from 'axios';
 import Cookies from 'js-cookie';
 
 function generateRandomString(length) {
-  const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
-  let result = '';
+    const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+    let result = '';
 
-  for (let i = 0; i < length; i++) {
-    const randomIndex = Math.floor(Math.random() * characters.length);
-    result += characters[randomIndex];
-  }
+    for (let i = 0; i < length; i++) {
+        const randomIndex = Math.floor(Math.random() * characters.length);
+        result += characters[randomIndex];
+    }
 
-  return result;
+    return result;
 }
+
+const SIMPLE_LOGIN_FORM = true;
 
 function LoginForm({ onLogin }) {
 
@@ -28,9 +30,15 @@ function LoginForm({ onLogin }) {
     const handleSubmit = async (e) => {
         e.preventDefault();
         try {
+            let userTokenToUse = userToken;
 
+            if (SIMPLE_LOGIN_FORM) {
+                if (!userTokenToUse && hostName) {
+                    userTokenToUse = generateRandomString(10);
+                }
+            }
             const response = await axios.post('/auth', {
-                token: userToken,
+                token: userTokenToUse,
                 player_data: {
                     name: playerName,
                     game_token: gameToken,
@@ -38,13 +46,14 @@ function LoginForm({ onLogin }) {
                 user_data: {
                     name: hostName,
                     email: hostEmail,
+                    simple_game_start: SIMPLE_LOGIN_FORM,
                 },
             });
 
             const { token } = response.data;
             Cookies.set('authToken', token);
             sessionStorage.setItem('authToken', token);
-            onLogin();
+            onLogin({ startGame: SIMPLE_LOGIN_FORM });
         } catch (err) {
 
             setError('Invalid credentials');
@@ -56,31 +65,34 @@ function LoginForm({ onLogin }) {
         <form onSubmit={handleSubmit}>
             <div class="container">
                 <h2>Начать Новую Игру</h2>
+                {!SIMPLE_LOGIN_FORM && (
+                    <input
+                        type="text"
+                        value={userToken}
+                        onChange={(e) => setUserToken(e.target.value)}
+                        placeholder="Enter User Token"
+                    />
+                )}
                 <input
-                type="text"
-                value={userToken}
-                onChange={(e) => setUserToken(e.target.value)}
-                placeholder="Enter User Token"
-            />
-
+                    type="text"
+                    value={hostName}
+                    onChange={(e) => setHostName(e.target.value)}
+                    placeholder="Имя Ведущего"
+                />
+                {!SIMPLE_LOGIN_FORM && (
+                    <input
+                        type="email"
+                        value={hostEmail}
+                        onChange={(e) => setHostEmail(e.target.value)}
+                        placeholder="Email"
+                    />
+                )}
                 <input
-                type="text"
-                value={hostName}
-                onChange={(e) => setHostName(e.target.value)}
-                placeholder="Имя Ведущего"
-            />
-            <input
-                type="email"
-                value={hostEmail}
-                onChange={(e) => setHostEmail(e.target.value)}
-                placeholder="Email"
-            />
-            <input
-                type="text"
-                value={roundsNum}
-                onChange={(e) => setUserToken(e.target.value)}
-                placeholder="Количество тем"
-            />
+                    type="text"
+                    value={roundsNum}
+                    onChange={(e) => setUserToken(e.target.value)}
+                    placeholder="Количество тем"
+                />
                 <button type="submit">Start Game</button>
             </div>
 
@@ -93,12 +105,12 @@ function LoginForm({ onLogin }) {
                     placeholder="Имя Игрока"
                 />
                 <input
-                type="text"
-                value={gameToken}
-                onChange={(e) => setGameToken(e.target.value)}
-                placeholder="Токен Игры"
+                    type="text"
+                    value={gameToken}
+                    onChange={(e) => setGameToken(e.target.value)}
+                    placeholder="Токен Игры"
                 />
-                <button  type="submit">Присоединиться</button>
+                <button type="submit">Присоединиться</button>
             </div>
         </form>
     );
