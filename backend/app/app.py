@@ -108,7 +108,9 @@ def get_game_status_(game_id):
 
 def main():
     logger.info(f"Starting server in {ArgConfig.ENV} mode...")
-    app.run(host="127.0.0.1", port=4000)
+     # all IPs id not prod:
+    hosts_to_serve = "127.0.0.1" if ArgConfig.ENV == "prod" else "0.0.0.0"
+    app.run(host=hosts_to_serve, port=4000)
 
 
 

@@ -11,7 +11,7 @@ services:
     working_dir: /app
    
 
-    command: bash /app/backend.sh
+    command: bash /app/debug.sh
 
 
       
