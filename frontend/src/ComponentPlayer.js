@@ -3,6 +3,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import callAPI from './callAPI';
 
 import { handlePlayerLoop, generatePlayerSummary } from "./gameFlow";
+import RoundStatsTable from "./RoundStatsTable";
 
 const POSSIBLE_STATES = {
     AUTO_JOIN: 'AUTO_JOIN',
@@ -20,8 +21,6 @@ function ComponentPlayer({ startGame }) {
     const [gameID, setGameID] = useState(null);
     const [savedPlayer, setSavedPlayer] = useState(null);
     const [gameStatus, setGameStatus] = useState(null);
-
-
 
     const [loading, setLoading] = useState(false);
 
@@ -105,9 +104,6 @@ function ComponentPlayer({ startGame }) {
 
     return (
         <div>
-            <h2>Player Interface</h2>
-
-
             {gameState === POSSIBLE_STATES.NOT_EXIST && <button onClick={() => logout()}>Something broke</button>}
             {gameState === POSSIBLE_STATES.CREATED && (
                 <div>
@@ -118,7 +114,7 @@ function ComponentPlayer({ startGame }) {
 
             {gameState === POSSIBLE_STATES.STARTED && (
                 <div>
-                    <h3>Game ID: {gameID}</h3>
+                    <h2>Тема: {gameStatus?.round_number}: {gameStatus?.round_name}</h2>
                     {gameStatus?.question_state === "fake" && (
                         <div>
                             <p>Game Status: {JSON.stringify(gameStatus)}</p>
@@ -130,20 +126,7 @@ function ComponentPlayer({ startGame }) {
 
                         <div>
 
-                            <h2>Тема 3: Париж и Пригороды</h2>
-
-                                <table>
-                                    <tr>
-                                        <th>Игрок</th>
-                                        <th>Счет</th>
-                                        <th>10</th><th>20</th><th>30</th><th>40</th><th>50</th>
-                                    </tr>
-<tr><td class="player-name">Вовочка</td><td class="score positive-score">40</td><td class="plus">+</td><td class="minus">-</td><td class="dot">•</td><td class="plus">+</td><td class="dot">•</td></tr>
-<tr><td class="player-name">Невовочка</td><td class="score positive-score">30</td><td class="dot">•</td><td class="plus">+</td><td class="minus">-</td><td class="dot">•</td><td class="plus">+</td></tr>
-<tr><td class="player-name">Сам Пришел</td><td class="score negative-score">-20</td><td class="minus">-</td><td class="dot">•</td><td class="plus">+</td><td class="minus">-</td><td class="dot">•</td></tr>
-<tr><td class="player-name">Сергей Лобачев</td><td class="score positive-score">10</td><td class="plus">+</td><td class="minus">-</td><td class="dot">•</td><td class="plus">+</td><td class="minus">-</td></tr>
-                                </table>
-
+                            <RoundStatsTable data={gameStatus.current_round_stats} />
 
                             <button class="round-button" onClick={() => sendMessage({
                                 action: "signal",
