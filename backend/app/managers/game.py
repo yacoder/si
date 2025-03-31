@@ -99,8 +99,9 @@ class AGame:
                         # if socket is not available, remove it from the list of players
                         if p in self.players:
                             del self.players[p]
-                else:
-                    self.server_manager.unregister_player(p)
+                # Disabled this for now as it block reconnect
+                # else:
+                #    self.server_manager.unregister_player(p)
 
     def finalize_game(self):
         self.finalized = True
@@ -114,6 +115,10 @@ class AGame:
 
     def register_player(self, player: Player):
         if not self.finalized:
+            player_id = player.player_id
+            if player_id in self.players:
+                # if player is already registered, restore it's score
+                player.score = self.players[player_id].score
             self.players[player.player_id] = player
 
     def unregister_player(self, player: Player):
