@@ -2,6 +2,10 @@ import os
 import uuid
 
 import json
+
+from backend.app.util.util import ArgConfig
+
+
 # import mysql.connector
 
 
@@ -25,13 +29,18 @@ class GenericDataProvider:
 
             self.use_predefined_json = False  # Flag to indicate if predefined JSON data should be used
 
+
+
             env_use_predefined_json = os.getenv("SI_SAVE_JSON")
             if env_use_predefined_json is not None and env_use_predefined_json.lower() == "true":
                 self.use_predefined_json = True
-                # Load predefined JSON data from a file if the file exists
-                if os.path.exists("data.json"):
-                    with open("data.json", "r") as f:
-                        self.data = json.load(f)
+            if env_use_predefined_json is None:
+                env_use_predefined_json = ArgConfig.is_env_use_predefined_json()
+                if env_use_predefined_json:
+                    # Load predefined JSON data from a file if the file exists
+                    if os.path.exists("data.json"):
+                        with open("data.json", "r") as f:
+                            self.data = json.load(f)
     
 
 

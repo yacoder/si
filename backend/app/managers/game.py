@@ -137,7 +137,7 @@ class AGame:
 class SIGame(AGame):
 
     DEFAULT_SIGNAL_ACCUMULATION_TIME = 1  # seconds
-    DEFAULT_TIMER_COUNTDOWN = 6  # seconds
+    DEFAULT_TIMER_COUNTDOWN = 5  # seconds
     DEFAULT_NOMINALS = [10, 20, 30,40, 50]
 
     def __init__(self, server_manager, number_of_rounds=DEFAULT_NUMBER_OF_ROUNDS):
@@ -307,17 +307,14 @@ class SIGame(AGame):
             # if signal is received, stopping countdown
             timer.cancel()
         if self.time_left > 0:
-            logger.info(f"{self.time_left} seconds left")
-            self.time_left -= interval
             self.update_status()
+            self.time_left -= interval
         else:
-            logger.info(f"time expired, canceling timer and rolling over to next question")
             self.roll_to_next_question()
             self.update_status()
             timer.cancel()
 
     def start_timer(self, interval=1):
-        logger.info(f"starting timer with {self.time_left} seconds left")
         timer = Timer(interval, self.start_timer, [interval])
         self._run_timer(timer, interval)
         timer.start()

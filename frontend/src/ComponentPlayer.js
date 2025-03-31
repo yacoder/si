@@ -68,6 +68,8 @@ function ComponentPlayer({ startGame }) {
 
     }
 
+    const disable = false;
+
     const handleJoinGame = async (event) => {
 
         if (!savedPlayer?.player_id || !savedPlayer?.name) {
@@ -124,19 +126,35 @@ function ComponentPlayer({ startGame }) {
                     )}
 
                     {gameStatus?.question_state === "running" && (
+
+
                         <div>
-                            <p>Playing for: {gameStatus.nominal}</p>
-                            <p>Time Remaining: {gameStatus.time_left} seconds</p>
+
+                            <h2>Тема 3: Париж и Пригороды</h2>
+
+                                <table>
+                                    <tr>
+                                        <th>Игрок</th>
+                                        <th>Счет</th>
+                                        <th>10</th><th>20</th><th>30</th><th>40</th><th>50</th>
+                                    </tr>
+<tr><td class="player-name">Вовочка</td><td class="score positive-score">40</td><td class="plus">+</td><td class="minus">-</td><td class="dot">•</td><td class="plus">+</td><td class="dot">•</td></tr>
+<tr><td class="player-name">Невовочка</td><td class="score positive-score">30</td><td class="dot">•</td><td class="plus">+</td><td class="minus">-</td><td class="dot">•</td><td class="plus">+</td></tr>
+<tr><td class="player-name">Сам Пришел</td><td class="score negative-score">-20</td><td class="minus">-</td><td class="dot">•</td><td class="plus">+</td><td class="minus">-</td><td class="dot">•</td></tr>
+<tr><td class="player-name">Сергей Лобачев</td><td class="score positive-score">10</td><td class="plus">+</td><td class="minus">-</td><td class="dot">•</td><td class="plus">+</td><td class="minus">-</td></tr>
+                                </table>
+
+
                             <button class="round-button" onClick={() => sendMessage({
                                 action: "signal",
                                 player_id: savedPlayer.player_id,
                                 local_ts: Date.now(),
 
-                            })}> {gameStatus.time_left <5 ? gameStatus.time_left : "ANSWER"}</button>
+                            })}> {gameStatus.time_left <5 ? gameStatus.time_left : "Тыц!"}</button>
                         </div>
                     )}
 
-                    {gameStatus?.question_state === "false" &&
+                    {disable &&
                     (
                     <button onClick={() => logout()}>Quit game</button>
                     )
@@ -144,9 +162,10 @@ function ComponentPlayer({ startGame }) {
 
                 </div>)}
 
-            {gameState === POSSIBLE_STATES.ENDED && <button onClick={() => logout()}>Game over</button>}
 
-            {generatePlayerSummary(gameStatus?.players, savedPlayer?.player_id)}
+            {disable && gameState === POSSIBLE_STATES.ENDED && <button onClick={() => logout()}>Game over</button>}
+
+            {disable && generatePlayerSummary(gameStatus?.players, savedPlayer?.player_id)}
 
 
 

@@ -58,25 +58,61 @@ body {
 .player_summary{
   color:#28a745
 }
+
+
+
 table {
     width: 100%;
     border-collapse: collapse;
     margin-top: 10px;
+    background-color: #222; /* Темный фон таблицы */
+    color: #fff; /* Белый текст */
 }
+
+.player-name {
+    text-align: left;
+    color: #4CAF50; /* Яркий зеленый для лучшей видимости */
+    font-weight: bold;
+}
+
 th, td {
-    border: 1px solid #ccc;
-    padding: 5px;
+    border: 1px solid #555; /* Серые границы */
+    padding: 15px;
     text-align: center;
+    font-size: 1.5em;
 }
+
+th {
+    background-color: #333; /* Затемненный заголовок */
+    color: #FFD700; /* Желтый цвет заголовков */
+}
+
 .score {
     font-size: 2em;
     font-weight: bold;
 }
-.positive-score { color: darkgreen; }
-.negative-score { color: red; }
-.plus { color: red; font-weight: bold; font-size: 2.25em; }
-.minus { color: blue; font-weight: bold; font-size: 2.25em; }
-.dot { color: black; font-weight: bold; }
+
+.positive-score { color: #0f0; } /* Ярко-зеленый для плюсового счета */
+.negative-score { color: #f00; } /* Ярко-красный для отрицательного счета */
+
+.plus {
+    color: #ff4444; /* Красный для плюсов */
+    font-weight: bold;
+    font-size: 2.25em;
+}
+
+.minus {
+    color: #4488ff; /* Голубой для минусов */
+    font-weight: bold;
+    font-size: 2.25em;
+}
+
+.dot {
+    color: #bbb; /* Серый для точек */
+    font-weight: bold;
+}
+
+
 .round-button {
     width: 240px;
     height: 240px;
