@@ -1,7 +1,6 @@
 // src/PrepareDataBasedOnURL.js
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import Cookies from 'js-cookie';
 import callAPI from './callAPI';
 import { handleLoop as handleHostLoop, generatePlayerSummary } from "./gameFlow";
 
@@ -81,6 +80,7 @@ function ComponentHost({ startGame, autostartNumRounds }) {
     }
 
     const reloadGameStatus = async () => {
+        setLoading(true);
         try {
             const data = await callAPI(`/api/host/game/${gameID}`);
             if (data && data.status?.game_id) {
@@ -88,6 +88,9 @@ function ComponentHost({ startGame, autostartNumRounds }) {
             }
         } catch (error) {
             console.error('Error setting data:', error);
+        }
+        finally {
+            setLoading(false);
         }
     }
 

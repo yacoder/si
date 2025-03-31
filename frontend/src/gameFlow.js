@@ -96,7 +96,7 @@ export const handleLoop = (name, setHostData, setScreen, setGameStatus, screen,
                     setGameStatus(data.status); // Update game status
                 }
 
-                if (data.action && data.action == "offset_check") {
+                if (data.action && data.action === "offset_check") {
                     console.log("checking offset for host", data.offset_check);
                     data['client_ts'] = Date.now();
                     socket.send(JSON.stringify(data));
