@@ -55,6 +55,9 @@ body {
     margin-bottom: 20px;
     text-align: center;
 }
+.player_summary{
+  color:#28a745
+}
 table {
     width: 100%;
     border-collapse: collapse;
