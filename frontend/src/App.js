@@ -16,8 +16,9 @@ function App() {
   const [isPlayer, setIsPlayer] = useState(false);
   const [startGame, setStartGame] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [numRounds, setNumRounds] = useState(8);
 
-  const setDataBasedOnToken = (startGame) => {
+  const setDataBasedOnToken = ({ startGame, numRounds }) => {
     const token = Cookies.get('authToken');
     const sessionToken = sessionStorage.getItem('authToken');
     if (token && token === sessionToken) {
@@ -27,20 +28,22 @@ function App() {
       } else {
         setIsPlayer(false);
         setActiveTab('host');
+        setNumRounds(numRounds);
 
       }
       setStartGame(startGame);
+
       setIsAuthenticated(true);
     }
   }
 
   useEffect(() => {
-    setDataBasedOnToken();
+    setDataBasedOnToken({});
 
   }, []);
 
-  const handleLogin = ({ startGame }) => {
-    setDataBasedOnToken(startGame);
+  const handleLogin = (startupParams) => {
+    setDataBasedOnToken(startupParams);
 
   };
   if (!isAuthenticated) {
@@ -60,7 +63,7 @@ function App() {
          <button onClick={() => setActiveTab('host')}>Host Interface</button>
          <button onClick={() => setActiveTab('player')}>Player Interface</button>
        </div> */}
-        {!isPlayer && activeTab === 'host' && <ComponentHost startGame={startGame} />}
+        {!isPlayer && activeTab === 'host' && <ComponentHost startGame={startGame} autostartNumRounds={numRounds} />}
         {isPlayer && activeTab === 'player' && <ComponentPlayer startGame={startGame} />}
 
       </header>

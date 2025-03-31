@@ -15,7 +15,7 @@ const POSSIBLE_STATES = {
 
 
 
-function ComponentHost({ startGame }) {
+function ComponentHost({ startGame, autostartNumRounds }) {
 
     const [gameState, setGameState] = useState(startGame ? POSSIBLE_STATES.AUTO_START : POSSIBLE_STATES.NOT_EXIST);
     const [loading, setLoading] = useState(false);
@@ -26,6 +26,7 @@ function ComponentHost({ startGame }) {
     const [gameStatus, setGameStatus] = useState(null); // Stores game status updates from the WebSocket
     const [reconnectGameID, setReconnectGameID] = useState(null); // Stores game ID for reconnection
     const [gameID, setGameID] = useState(null); // Stores game ID for reconnection
+    const [numRounds, setNumRounds] = useState(autostartNumRounds); // Number of rounds for the game
 
 
 
@@ -51,7 +52,8 @@ function ComponentHost({ startGame }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
     const handleCreateGame = async () => {
         try {
-            const messanger_handler = handleHostLoop(name, setHostData, switchStatus, switchGameStatus, 'start', null)
+            const messanger_handler = handleHostLoop(name, setHostData, switchStatus, switchGameStatus, 'start', null, null,
+                { number_of_rounds: numRounds });
             messanger.current = messanger_handler; // Save the messanger function to state
 
         } catch (error) {
@@ -119,9 +121,9 @@ function ComponentHost({ startGame }) {
                     <p>Click the button below to create a new game.</p>
                     <input
                         type="text"
-                        placeholder="Game Name"
-                        value={name}
-                        onChange={(e) => setName(e.target.value)}
+                        placeholder="Number of rounds"
+                        value={numRounds}
+                        onChange={(e) => setNumRounds(e.target.value)}
                     />
                     <button onClick={handleCreateGame}>Create Game</button>
                     <br />
