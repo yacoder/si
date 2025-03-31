@@ -37,6 +37,9 @@ STATUS_OK = {"status": "OK"}
 def websocket_connection(ws, server_manager: SIServerManager):
     while True:
         try:
+            if ws.connected is False:
+                logger.info("Socket closed")
+                break
             data = ws.receive()  # Receive a message from the client
             data = json.loads(data)
             action = data.get("action")
@@ -122,6 +125,7 @@ def websocket_connection(ws, server_manager: SIServerManager):
                 logger.info(f"Sending: {result}")
                 ws.send(f"{result}")
         except Exception as e:
+            logger.error(f"Error: {e}")
             if ArgConfig.is_dev():
                 raise e
             else:
