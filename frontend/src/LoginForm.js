@@ -57,7 +57,7 @@ function LoginForm({ onLogin }) {
             onLogin({ startGame: SIMPLE_LOGIN_FORM, numRounds: numRounds });
         } catch (err) {
 
-            setError('Invalid credentials');
+            setError('Invalid credentials: ' + err.message);
 
         }
     };
@@ -112,6 +112,10 @@ function LoginForm({ onLogin }) {
                     placeholder="Токен Игры"
                 />
                 <button type="submit">Присоединиться</button>
+            </div>
+
+            <div class="container">
+                {error && <p style={{ color: 'red' }}>{error}</p>}
             </div>
         </form>
     );
