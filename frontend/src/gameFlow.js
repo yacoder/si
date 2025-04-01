@@ -134,11 +134,10 @@ export const handleLoop = (name, setHostData, setScreen, setGameStatus, screen,
                             socket.send(JSON.stringify(data));
                         }
                         else if (data.action === 'offset_check_result') {
-//                            setClientSeverLag(data['client_server_lag']);
-//                            setSeveClientrLag(data['server_client_lag']);
+//                            setLag(data['lag']);
                         }
 
-                        }
+                    }
                 } catch (error) {
                     console.error("Error processing incoming status update:", error);
                 }
