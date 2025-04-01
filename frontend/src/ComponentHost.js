@@ -6,6 +6,8 @@ import "./i18n"; // Import i18n initialization
 import callAPI from './callAPI';
 import { handleLoop as handleHostLoop } from "./gameFlow";
 import RoundStatsTable from "./RoundStatsTable";
+import GameSettingsCollector from "./GameSettingsCollector";
+
 
 const POSSIBLE_STATES = {
     AUTO_START: 'AUTO_START',
@@ -17,7 +19,7 @@ const POSSIBLE_STATES = {
 
 
 
-function ComponentHost({ startGame, autostartNumRounds }) {
+function ComponentHost({ startGame, newGameSettings }) {
     const { t, i18n } = useTranslation(); // Hook for translations
 
     const [gameState, setGameState] = useState(startGame ? POSSIBLE_STATES.AUTO_START : POSSIBLE_STATES.NOT_EXIST);
@@ -27,15 +29,32 @@ function ComponentHost({ startGame, autostartNumRounds }) {
     const [name, setName] = useState(t("defaultGameName")); // Name input value (default: AAA)
     const [hostData, setHostData] = useState(null); // Stores host data from the WebSocket
     const [gameStatus, setGameStatus] = useState(null); // Stores game status updates from the WebSocket
-    const [reconnectGameID, setReconnectGameID] = useState(null); // Stores game ID for reconnection
-    const [gameID, setGameID] = useState(null); // Stores game ID for reconnection
-    const [numRounds, setNumRounds] = useState(autostartNumRounds); // Number of rounds for the game
-    const [roundNames, setRoundNames] = useState(""); // Stores topics for the game
-    const [showRoundNameEdits, setShowRoundNameEdits] = useState(false); // Flag to show/hide round name edits
+    const [reconnectGameToken, setReconnectGameToken] = useState(null); // Stores game ID for reconnection
+    const [gameSettings, setGameSettings] = useState(newGameSettings); // Stores game settings
+
+    const messanger = useRef(null);
+    const currentGameID = useRef(null); // Ref to store the current game ID
 
 
     const handleLanguageChange = (lang) => {
         i18n.changeLanguage(lang); // Change language dynamically
+    };
+
+    const reloadGameStatus = async () => {
+        setLoading(true);
+        try {
+            if (currentGameID.current) {
+                const data = await callAPI(`/api/host/game/${currentGameID.current}`);
+                if (data && data.status?.game_id) {
+                    setGameStatus(data.status);
+                }
+            }
+        } catch (error) {
+            console.error('Error setting data:', error);
+        }
+        finally {
+            setLoading(false);
+        }
     };
 
 
@@ -48,13 +67,23 @@ function ComponentHost({ startGame, autostartNumRounds }) {
         if (status === "OK") {
             reloadGameStatus();
         } else {
-            setGameStatus(status);
-            if (status?.game_id) {
-                setGameID(status.game_id);
+            if (status?.game_id && currentGameID.current === status.game_id) {
+                // only accept status from current game
+                // can even be replaced with reloadGameStatus
+                setGameStatus(status);
             }
         }
     };
-    const messanger = useRef(null);
+
+    const handleSwitchHostData = (data) => {
+        if (data?.game_id) {
+            currentGameID.current = data.game_id;
+        }
+        setHostData(data);
+    };
+
+
+
 
 
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -62,9 +91,8 @@ function ComponentHost({ startGame, autostartNumRounds }) {
         try {
             const data = await callAPI(`/api/host`);
             const hostID = data.id;
-            console.log("Host ID:", hostID);
-            const messanger_handler = handleHostLoop(name, setHostData, switchStatus, switchGameStatus, 'start', hostID, null,
-                { number_of_rounds: numRounds, round_names: roundNames },
+            const messanger_handler = handleHostLoop(name, handleSwitchHostData, switchStatus, switchGameStatus, 'start', hostID, null,
+                { number_of_rounds: gameSettings?.numRounds, round_names: gameSettings?.roundNames },
                 window.location.href
             );
             messanger.current = messanger_handler; // Save the messanger function to state
@@ -74,13 +102,14 @@ function ComponentHost({ startGame, autostartNumRounds }) {
         }
     }
 
-    const handleReconnectGame = async (event) => {
+    const handleReconnectGame = async () => {
         try {
-            const data = await callAPI(`/api/host/game/${reconnectGameID}`);
+            const data = await callAPI(`/api/host/game/${reconnectGameToken}`);
             if (data && data.status?.game_id) {
-                setGameID(data.status.game_id);
+                const gameIDToUse = data.status.game_id
+                currentGameID.current = gameIDToUse;
                 setGameStatus(data.status);
-                const messanger_handler = handleHostLoop(name, setHostData, switchStatus, switchGameStatus, 'reconnect', null, reconnectGameID,
+                const messanger_handler = handleHostLoop(name, handleSwitchHostData, switchStatus, switchGameStatus, 'reconnect', null, gameIDToUse,
                     {},
                     window.location.href
                 )
@@ -91,32 +120,17 @@ function ComponentHost({ startGame, autostartNumRounds }) {
         }
     }
 
-    const reloadGameStatus = async () => {
-        setLoading(true);
-        try {
-            if (gameID) {
-                const data = await callAPI(`/api/host/game/${gameID}`);
-                if (data && data.status?.game_id) {
-                    setGameStatus(data.status);
-                }
-            }
-        } catch (error) {
-            console.error('Error setting data:', error);
-        }
-        finally {
-            setLoading(false);
-        }
-    }
+
 
 
     const sendMessage = useCallback((message) => {
         if (messanger.current) {
-            message.game_id = gameID;
+            message.game_id = currentGameID.current;
             messanger.current(message);
         } else {
             console.error('Messanger is not initialized yet.');
         }
-    }, [gameID, messanger]);
+    }, [currentGameID, messanger]);
 
     const handleEndGame = async () => {
         sendMessage({
@@ -125,13 +139,14 @@ function ComponentHost({ startGame, autostartNumRounds }) {
         setGameState(POSSIBLE_STATES.ENDED);
     }
 
-    const handleSetRoundNames = async () => {
+    const handleSetRoundNamesDuringGame = async () => {
         sendMessage({
             action: "set_round_names",
-            round_names: roundNames
+            round_names: gameSettings.roundNames,
         });
-        setShowRoundNameEdits(false);
     }
+
+
 
     // call handleCreateGame when startGame is true
     useEffect(() => {
@@ -162,20 +177,22 @@ function ComponentHost({ startGame, autostartNumRounds }) {
             {(gameState === POSSIBLE_STATES.NOT_EXIST || gameState === POSSIBLE_STATES.ENDED) && (
                 <div>
                     <p>{t("createNewGame")}</p>
-                    <input
-                        type="text"
-                        placeholder={t("numberOfRounds")}
-                        value={numRounds}
-                        onChange={(e) => setNumRounds(e.target.value)}
+
+                    <GameSettingsCollector
+                        t={t}
+                        fireSendUpdatedGameSettings={() => { }}
+                        allowSetRoundNumber={true}
+                        setGameSettings={setGameSettings}
+                        gameSettings={gameSettings}
                     />
                     <button onClick={handleCreateGame}>{t("createGame")}</button>
                     <br />
                     <p>{t("reconnectGame")}</p>
                     <input
                         type="text"
-                        placeholder="Game ID"
-                        value={reconnectGameID}
-                        onChange={(e) => setReconnectGameID(e.target.value)}
+                        placeholder={t("gameTokenPlaceholder")}
+                        value={reconnectGameToken}
+                        onChange={(e) => setReconnectGameToken(e.target.value)}
                     />
                     <button onClick={handleReconnectGame}>{t("reconnectGame")}</button>
                     <button onClick={logout}>{t("quitToLogin")}</button>
@@ -184,7 +201,7 @@ function ComponentHost({ startGame, autostartNumRounds }) {
 
             {gameState === POSSIBLE_STATES.STARTED && (
                 <div>
-                    <p>{t("hostToken")}: {sessionStorage.getItem('authToken')}, {t("gameToken")}: {hostData?.token}</p>
+                    <p>{t("hostToken")}: {sessionStorage.getItem('authToken')}, {t("gameToken")}: {hostData?.token} {currentGameID.current}</p>
                     <h2>{t("round")} {gameStatus?.round_number}: {gameStatus?.round_name} </h2>
 
                     {gameStatus?.question_state === "running" && (
@@ -228,22 +245,14 @@ function ComponentHost({ startGame, autostartNumRounds }) {
 
             {gameState === POSSIBLE_STATES.STARTED && (
                 <div>
-                    {showRoundNameEdits && (
-                        <div>
-                            <h3>{t("setTopics")}</h3>
-                            <textarea
-                                placeholder={t("roundNamesPlaceholder")}
-                                value={roundNames}
-                                onChange={(e) => setRoundNames(e.target.value)}
-                                rows={numRounds || 5}
-                                style={{ width: "100%" }}
-                            />
-                            <button onClick={handleSetRoundNames}>{t("setTopics")}</button>
-                        </div>
-                    )}
-                    {!showRoundNameEdits && (
-                        <button onClick={() => setShowRoundNameEdits(true)}>{t("setTopics")}</button>
-                    )}
+                    <GameSettingsCollector
+                        t={t}
+                        fireSendUpdatedGameSettings={handleSetRoundNamesDuringGame}
+                        allowSetRoundNumber={false}
+                        setGameSettings={setGameSettings}
+                        gameSettings={gameSettings}
+                    />
+
                     <button onClick={handleEndGame}>{t("endGame")}</button>
                 </div>
             )}

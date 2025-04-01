@@ -5,6 +5,8 @@ import Cookies from 'js-cookie';
 import { useTranslation } from "react-i18next";
 import "./i18n"; // Import i18n initialization
 
+import GameSettingsCollector from "./GameSettingsCollector";
+
 function generateRandomString(length) {
     const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
     let result = '';
@@ -24,10 +26,13 @@ function LoginForm({ onLogin }) {
 
     const [userToken, setUserToken] = useState('');
     const [gameToken, setGameToken] = useState('10001');
-    const [numRounds, setNumRounds] = useState(8);
+
+
     const [hostName, setHostName] = useState('');
     const [playerName, setPlayerName] = useState(generateRandomString(5));
     const [hostEmail, setHostEmail] = useState('');
+
+    const [gameSettings, setGameSettings] = useState({});
 
 
 
@@ -65,7 +70,6 @@ function LoginForm({ onLogin }) {
                 request.user_data = {
                     name: hostNameToUse,
                     email: hostEmail,
-                    rounds_num: numRounds,
                     simple_game_start: startGame,
                 };
             } else {
@@ -81,7 +85,7 @@ function LoginForm({ onLogin }) {
             const { token } = response.data;
             Cookies.set('authToken', token);
             sessionStorage.setItem('authToken', token);
-            onLogin({ startGame: startGame, numRounds: numRounds });
+            onLogin({ startGame: startGame, newGameSettings: gameSettings });
         } catch (err) {
 
             setError('Invalid credentials: ' + err.message);
@@ -129,11 +133,12 @@ function LoginForm({ onLogin }) {
                             placeholder={t("hostEmailPlaceholder")}
                         />
                     )}
-                    <input
-                        type="text"
-                        value={numRounds}
-                        onChange={(e) => setNumRounds(e.target.value)}
-                        placeholder={t("numRoundsPlaceholder")}
+                    <GameSettingsCollector
+                        t={t}
+                        fireSendUpdatedGameSettings={() => { }}
+                        allowSetRoundNumber={true}
+                        setGameSettings={setGameSettings}
+                        gameSettings={gameSettings}
                     />
                     <button onClick={handleSubmitHostStart}>{t("startNewGame")}</button>
                     <h3>{t("hostCabinet")}</h3>

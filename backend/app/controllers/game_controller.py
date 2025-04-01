@@ -55,14 +55,18 @@ def websocket_connection(ws, server_manager: SIServerManager):
                 except ValueError:
                     number_of_rounds = DEFAULT_NUMBER_OF_ROUNDS
                 game = create_game(server_manager, host_name, host_id, ws, number_of_rounds=number_of_rounds, round_names_as_text=round_names_as_text)
-                result = dict(id=game.game_id, token=game.token, host={"name": game.host.name, "id": game.host.player_id, "token": game.token})
+                result_start = dict(id=game.game_id, token=game.token, host={"name": game.host.name, "id": game.host.player_id, "token": game.token, "game_id": game.game_id})
+                logger.info(f"Sending: {result_start}")
+                ws.send(f"{result_start}")
+                result = None
+                game.update_status()
             elif action == "host_reconnect":
                 # { "action": "host_reconnect",  "token": "ABCDEF" }
                 game_id = data.get("game_id")
                 game = server_manager.get_game_by_id(game_id)
                 if game is not None:
                     server_manager.register_socket(game.host.player_id, ws)
-                    result = dict(id=game.game_id, token=game.token, host={"name": game.host.name, "id": game.host.player_id, "token": game.token})
+                    result = dict(id=game.game_id, token=game.token, host={"name": game.host.name, "id": game.host.player_id, "token": game.token, "game_id": game.game_id})
                 else:
                     result = {"status": "error", "desc": "game not found"}
             elif action == "register":
