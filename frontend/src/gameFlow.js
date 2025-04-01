@@ -126,12 +126,19 @@ export const handleLoop = (name, setHostData, setScreen, setGameStatus, screen,
                         console.log("setting status", data.status);
                         setGameStatus(data.status); // Update game status
                     }
+                    if (data.action) {
 
-                    if (data.action && data.action === "offset_check") {
-                        console.log("checking offset for host", data.offset_check);
-                        data['client_ts'] = Date.now();
-                        socket.send(JSON.stringify(data));
-                    }
+                        if(data.action === "offset_check") {
+                            console.log("checking offset for host", data.offset_check);
+                            data['client_ts'] = Date.now();
+                            socket.send(JSON.stringify(data));
+                        }
+                        else if (data.action === 'offset_check_result') {
+//                            setClientSeverLag(data['client_server_lag']);
+//                            setSeveClientrLag(data['server_client_lag']);
+                        }
+
+                        }
                 } catch (error) {
                     console.error("Error processing incoming status update:", error);
                 }

@@ -24,6 +24,8 @@ function ComponentHost({ startGame, autostartNumRounds }) {
     const [name, setName] = useState("Test Game"); // Name input value (default: AAA)
     const [hostData, setHostData] = useState(null); // Stores host data from the WebSocket
     const [gameStatus, setGameStatus] = useState(null); // Stores game status updates from the WebSocket
+    const [clientServerLag, setClientServerLag ] = useState(0);
+    const [serverClientLag, setServerClientLag ] = useState(0);
     const [reconnectGameID, setReconnectGameID] = useState(null); // Stores game ID for reconnection
     const [gameID, setGameID] = useState(null); // Stores game ID for reconnection
     const [numRounds, setNumRounds] = useState(autostartNumRounds); // Number of rounds for the game

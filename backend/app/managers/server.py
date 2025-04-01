@@ -29,7 +29,8 @@ class AServerManager:
         self.game_loader = game_loader
 
     def process_offset_check(self, data):
-        self.ntp_manager.process_response(data)
+        client_sever_lag, server_client_lag = self.ntp_manager.process_response(data)
+        return client_sever_lag, server_client_lag
 
     def add_player_to_all_maps(self,  player: Player, ws: Server, game=None):
         if game is not None:

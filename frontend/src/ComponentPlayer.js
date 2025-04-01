@@ -23,6 +23,8 @@ function ComponentPlayer({ startGame }) {
     const [gameStatus, setGameStatus] = useState(null);
     const [gameName, setGameName] = useState("");
     const [currentNominal, setCurrentNominal] = useState(null);
+    const [clientServerLag, setClientServerLag ] = useState(0);
+    const [serverClientLag, setServerClientLag ] = useState(0);
 
     const [loading, setLoading] = useState(false);
 
@@ -110,6 +112,14 @@ function ComponentPlayer({ startGame }) {
 
 
     return (
+    <div>
+        <div className="top-bar">
+            <button onClick={logout} className="leave-button">Выйти из игры</button>
+            <span>⏳ Клиент → Сервер: {clientServerLag.toFixed(2)} ms</span>
+            <span>⏳ Сервер → Клиент: {serverClientLag.toFixed(2)} ms</span>
+            <span>🎮 Токен игры: {gameName}</span>
+        </div>
+
         <div>
             {gameState === POSSIBLE_STATES.NOT_EXIST && <button onClick={() => logout()}>Something broke</button>}
             {gameState === POSSIBLE_STATES.CREATED && (
@@ -121,7 +131,6 @@ function ComponentPlayer({ startGame }) {
 
             {gameState === POSSIBLE_STATES.STARTED && (
                 <div>
-                    <h1>Игра: {gameName} </h1>
                     <h2>Тема: {gameStatus?.round_number}: {gameStatus?.round_name} Вопрос: {currentNominal}</h2>
                     {gameStatus?.question_state === "fake" && (
                         <div>
@@ -168,6 +177,7 @@ function ComponentPlayer({ startGame }) {
 
 
         </div>
+     </div>
     );
 }
 
