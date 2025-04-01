@@ -15,7 +15,6 @@ function generateRandomString(length) {
 }
 
 const SIMPLE_LOGIN_FORM = true;
-const SHOW_HOST_TOKEN = false;
 
 function LoginForm({ onLogin }) {
 
@@ -25,7 +24,6 @@ function LoginForm({ onLogin }) {
     const [hostName, setHostName] = useState('');
     const [playerName, setPlayerName] = useState(generateRandomString(5));
     const [hostEmail, setHostEmail] = useState('');
-    const [displayHostToken, setDisplayHostToken] = useState(SHOW_HOST_TOKEN);
 
 
 
@@ -38,9 +36,6 @@ function LoginForm({ onLogin }) {
         }
         if (urlParams.get('game_token')) {
             setGameToken(urlParams.get('game_token'));
-        }
-        if (urlParams.get('display_token')) {
-            setDisplayHostToken(urlParams.get('display_token') === 'true');
         }
     }, []);
 
@@ -106,20 +101,12 @@ function LoginForm({ onLogin }) {
         <div class="parent">
             <form class="login-form" onSubmit={handleSubmit}>
                 <div>
-                    <h2>Начать Новую Игру</h2>
-                    {(!SIMPLE_LOGIN_FORM || displayHostToken) && (
-                        <input
-                            type="text"
-                            value={userToken}
-                            onChange={(e) => setUserToken(e.target.value)}
-                            placeholder="Enter User Token"
-                        />
-                    )}
+                    <h2>Ведущий</h2>
                     <input
                         type="text"
                         value={hostName}
                         onChange={(e) => setHostName(e.target.value)}
-                        placeholder="Имя Ведущего"
+                        placeholder="Имя Ведущего (не обязательно)"
                     />
                     {!SIMPLE_LOGIN_FORM && (
                         <input
@@ -135,12 +122,19 @@ function LoginForm({ onLogin }) {
                         onChange={(e) => setNumRounds(e.target.value)}
                         placeholder="Количество тем"
                     />
-                    <button onClick={handleSubmitHostStart}>Quick Start Game</button>
-                    <button onClick={handleSubmitHost}>Login</button>
+                    <button onClick={handleSubmitHostStart}>Начать Новую Игру</button>
+                    <h3>Зайти в кабинет ведущего</h3>
+                    <input
+                        type="text"
+                        value={userToken}
+                        onChange={(e) => setUserToken(e.target.value)}
+                        placeholder="Код ведущего"
+                    />
+                    <button onClick={handleSubmitHost}>Перейти к выбору игр</button>
                 </div>
 
                 <div>
-                    <h2>Присоединиться к игре</h2>
+                    <h2>Игрок</h2>
                     <input
                         type="text"
                         value={playerName}
