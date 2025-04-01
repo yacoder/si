@@ -2,7 +2,10 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import callAPI from './callAPI';
 
-import { handlePlayerLoop, generatePlayerSummary } from "./gameFlow";
+import { useTranslation } from "react-i18next";
+import "./i18n"; // Import i18n initialization
+
+import { handlePlayerLoop } from "./gameFlow";
 import RoundStatsTable from "./RoundStatsTable";
 
 const POSSIBLE_STATES = {
@@ -15,7 +18,7 @@ const POSSIBLE_STATES = {
 }
 
 function ComponentPlayer({ startGame }) {
-
+    const { t, i18n } = useTranslation(); // Hook for translations
 
     const [gameState, setGameState] = useState(startGame ? POSSIBLE_STATES.AUTO_JOIN : POSSIBLE_STATES.NOT_EXIST);
     const [gameID, setGameID] = useState(null);
@@ -27,6 +30,10 @@ function ComponentPlayer({ startGame }) {
     const [serverClientLag, setServerClientLag ] = useState(0);
 
     const [loading, setLoading] = useState(false);
+
+    const handleLanguageChange = (lang) => {
+        i18n.changeLanguage(lang); // Change language dynamically
+    };
 
     const loadData = useCallback(async () => {
         try {
@@ -76,9 +83,10 @@ function ComponentPlayer({ startGame }) {
 
     }
 
-    const disable = false;
+
 
     const handleJoinGame = async (event) => {
+        event?.preventDefault();
 
         if (!savedPlayer?.player_id || !savedPlayer?.name) {
             console.log("Player ID or name is not available...");
@@ -121,11 +129,17 @@ function ComponentPlayer({ startGame }) {
         </div>
 
         <div>
-            {gameState === POSSIBLE_STATES.NOT_EXIST && <button onClick={() => logout()}>Something broke</button>}
+            {false && (
+                <div>
+                    <button onClick={() => handleLanguageChange("en")}>English</button>
+                    <button onClick={() => handleLanguageChange("ru")}>Русский</button>
+                </div>
+            )}
+            {gameState === POSSIBLE_STATES.NOT_EXIST && <button onClick={() => logout()}>{t("somethingBroke")}</button>}
             {gameState === POSSIBLE_STATES.CREATED && (
                 <div>
-                    <button onClick={handleJoinGame}>Переподключиться</button>
-                    <button onClick={() => logout()}>Выйти</button>
+                    <button onClick={handleJoinGame}>{t("reconnect")}</button>
+                    <button onClick={logout}>{t("logout")}</button>
                 </div>
             )}
 
@@ -144,9 +158,9 @@ function ComponentPlayer({ startGame }) {
                         <div>
 
                             <RoundStatsTable data={gameStatus.current_round_stats}
-                            number_of_question_in_round={gameStatus.number_of_question_in_round}
-                            nominals={gameStatus.nominals}
-                             />
+                                number_of_question_in_round={gameStatus.number_of_question_in_round}
+                                nominals={gameStatus.nominals}
+                            />
 
                             <button class="round-button" onClick={() => sendMessage({
                                 action: "signal",
@@ -157,23 +171,16 @@ function ComponentPlayer({ startGame }) {
                         </div>
                     )}
 
-                    {disable &&
-                        (
-                            <button onClick={() => logout()}>Выйти</button>
-                        )
-                    }
+
 
                 </div>)}
 
 
-            {disable && gameState === POSSIBLE_STATES.ENDED && <button onClick={() => logout()}>Выйти</button>}
-
-            {disable && generatePlayerSummary(gameStatus?.players, savedPlayer?.player_id)}
 
 
 
 
-            {loading && <p>Loading...</p>}
+            {loading && <p>{t("loading")}</p>}
 
 
         </div>

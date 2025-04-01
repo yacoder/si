@@ -180,6 +180,19 @@ input, button {
 }
 
 
+.login-form h2 {
+    color: white;
+}
+.login-form h1 {
+  color: white;
+}
+.login-form h3 {
+  color: white;
+}
+
+
+
+
 button {
     background-color: #28a745;
     color: white;
