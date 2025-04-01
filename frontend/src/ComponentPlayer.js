@@ -21,6 +21,8 @@ function ComponentPlayer({ startGame }) {
     const [gameID, setGameID] = useState(null);
     const [savedPlayer, setSavedPlayer] = useState(null);
     const [gameStatus, setGameStatus] = useState(null);
+    const [gameName, setGameName] = useState("");
+    const [currentNominal, setCurrentNominal] = useState(null);
 
     const [loading, setLoading] = useState(false);
 
@@ -30,6 +32,8 @@ function ComponentPlayer({ startGame }) {
             const data = await callAPI(`/api/player/game`);
             if (data && data.status?.game_id) {
                 setGameID(data.status.game_id);
+                setGameName(data.status.game_token);
+                setCurrentNominal(data.status.nominal);
                 setSavedPlayer(data.player);
 
                 if (startGame) {
@@ -64,6 +68,9 @@ function ComponentPlayer({ startGame }) {
     const handleSetGameStatus = (status) => {
         setGameState(POSSIBLE_STATES.STARTED)
         setGameStatus(status);
+        if (status?.nominal) {
+            setCurrentNominal(status.nominal);
+        }
 
     }
 
@@ -107,14 +114,15 @@ function ComponentPlayer({ startGame }) {
             {gameState === POSSIBLE_STATES.NOT_EXIST && <button onClick={() => logout()}>Something broke</button>}
             {gameState === POSSIBLE_STATES.CREATED && (
                 <div>
-                    <button onClick={handleJoinGame}>Reconnect to game...</button>
-                    <button onClick={() => logout()}>Quit game</button>
+                    <button onClick={handleJoinGame}>Переподключиться</button>
+                    <button onClick={() => logout()}>Выйти</button>
                 </div>
             )}
 
             {gameState === POSSIBLE_STATES.STARTED && (
                 <div>
-                    <h2>Тема: {gameStatus?.round_number}: {gameStatus?.round_name}</h2>
+                    <h1>Игра: {gameName} </h1>
+                    <h2>Тема: {gameStatus?.round_number}: {gameStatus?.round_name} Вопрос: {currentNominal}</h2>
                     {gameStatus?.question_state === "fake" && (
                         <div>
                             <p>Game Status: {JSON.stringify(gameStatus)}</p>
@@ -133,20 +141,20 @@ function ComponentPlayer({ startGame }) {
                                 player_id: savedPlayer.player_id,
                                 local_ts: Date.now(),
 
-                            })}> {gameStatus.time_left <5 ? gameStatus.time_left : "Тыц!"}</button>
+                            })}> {gameStatus.time_left < 5 ? gameStatus.time_left : "Тыц!"}</button>
                         </div>
                     )}
 
                     {disable &&
-                    (
-                    <button onClick={() => logout()}>Quit game</button>
-                    )
+                        (
+                            <button onClick={() => logout()}>Выйти</button>
+                        )
                     }
 
                 </div>)}
 
 
-            {disable && gameState === POSSIBLE_STATES.ENDED && <button onClick={() => logout()}>Game over</button>}
+            {disable && gameState === POSSIBLE_STATES.ENDED && <button onClick={() => logout()}>Выйти</button>}
 
             {disable && generatePlayerSummary(gameStatus?.players, savedPlayer?.player_id)}
 

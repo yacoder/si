@@ -114,14 +114,15 @@ class SIServerManager(AServerManager):
         return game
     
    
-    def create_game(self, ws:Server, host_name=None, host_id=None, number_of_rounds=DEFAULT_NUMBER_OF_ROUNDS) -> AGame:
-        game = SIGame(self, game_save_handler=self.game_save_handler)
+    def create_game(self, ws:Server, host_name=None, host_id=None, number_of_rounds=DEFAULT_NUMBER_OF_ROUNDS, round_names_as_text=None) -> AGame:
+        game = SIGame(self, game_save_handler=self.game_save_handler, number_of_rounds=number_of_rounds if number_of_rounds is not None else DEFAULT_NUMBER_OF_ROUNDS)
         self.games[game.game_id] = game
         self.game_token_to_id[game.token] = game.game_id
         host_name = host_name or "Host"
         host = Player(host_name, game.game_id, host_id)
         self.add_player_to_all_maps(host, ws)
         game.register_host(host)
-        game.number_of_rounds = number_of_rounds if number_of_rounds is not None else DEFAULT_NUMBER_OF_ROUNDS
+        game.apply_round_names_as_text(round_names_as_text)
+            
         return game
 

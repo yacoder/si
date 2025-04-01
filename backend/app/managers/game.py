@@ -188,6 +188,7 @@ class SIGame(AGame):
         self.round_stats = [[{} for _ in range(len(self.nominals))] for _ in range(self.number_of_rounds)]
         self.current_round_stats = self.round_stats[self.current_round]
         self.number_of_question_in_round = 0
+        self.round_names = ["Тема #" + str(i+1) for i in range(0, self.number_of_rounds)]
 
         # resettable variables
         self.is_host_notified_on_first_signal: bool = False
@@ -213,6 +214,7 @@ class SIGame(AGame):
         self.current_round = raw_game_data["round_number"]
         self.game_stats = raw_game_data["game_stats"]
         self.round_name = raw_game_data["round_name"]
+        self.round_names = raw_game_data.get("round_names", self.round_names)
 
         number_of_questions_in_round = len(self.nominals)
 
@@ -233,6 +235,20 @@ class SIGame(AGame):
         self.number_of_question_in_round = self.nominal_index - 1
         self.question_number = (self.current_round - 1) * number_of_questions_in_round + self.number_of_question_in_round
         self.question_state = QuestionState[raw_game_data['question_state']]
+
+    def apply_round_names_as_text(self,round_names_as_text):
+        self.round_names = ["Тема #" + str(i+1) for i in range(0, self.number_of_rounds)]
+        if round_names_as_text is not None:
+            # break down the string into list of strings
+            round_names_as_lines = round_names_as_text.split("\n")            
+            for i in range(0, min(len(round_names_as_lines), self.number_of_rounds)):
+                if len(round_names_as_lines[i]) > 0:
+                    self.round_names[i] = round_names_as_lines[i]
+                
+
+    def set_round_names(self, round_names_as_text):
+        self.apply_round_names_as_text(round_names_as_text)
+        self.update_status()
 
     def reset(self, is_after_incorrect_answer: bool = False):
         self.signals = dict()
@@ -263,8 +279,10 @@ class SIGame(AGame):
         status['finalized'] = 1 if self.finalized else 0
         status["game_stats"] = self.game_stats
         status['game_id'] = self.game_id
+        status["game_token"] = self.token
         status['round_number'] = self.current_round
-        status['round_name'] = "Тема #" + str(self.current_round)
+        status['round_name'] = self.round_names[self.current_round - 1] if self.round_names is not None and len(self.round_names) > 0 else None
+        status['round_names'] = self.round_names
         status['current_round_stats'] = self._generate_current_round_array()
         result = dict(status=status)
         result = to_dict(result)
