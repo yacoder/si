@@ -39,6 +39,7 @@ const resources = {
             somethingBroke: "Something broke",
             reconnect: "Reconnect",
             logout: "Logout",
+            logoutPlayer: "Logout Player",
             game: "Game",
             round: "Topic",
             question: "Question",
@@ -48,6 +49,7 @@ const resources = {
             messengerNotInitialized: "Messenger is not initialized yet",
             gameStatus: "Game Status",
             gameToken: "Game Token",
+            lag: "Lag",
         },
     },
     ru: {
@@ -90,6 +92,7 @@ const resources = {
             somethingBroke: "Что-то пошло не так",
             reconnect: "Переподключиться",
             logout: "Выйти",
+            logoutPlayer: "Выйти из игры",
             game: "Игра",
             round: "Тема",
             question: "Вопрос",
@@ -99,6 +102,7 @@ const resources = {
             messengerNotInitialized: "Мессенджер еще не инициализирован",
             gameStatus: "Статус игры",
             gameToken: "Код игры",
+            lag: "Lag",
         },
     },
 };

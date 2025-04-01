@@ -9,7 +9,6 @@ import Cookies from 'js-cookie';
 import ComponentHost from './ComponentHost';
 import ComponentPlayer from './ComponentPlayer';
 
-const DEBUG_SERVER = false;
 
 function App() {
   const [activeTab, setActiveTab] = useState('prepare');
@@ -51,7 +50,7 @@ function App() {
   };
   if (!isAuthenticated) {
     const urlParams = new URLSearchParams(window.location.search);
-    if (DEBUG_SERVER || urlParams.get('debug')) {
+    if (urlParams.get('debug')) {
       return <StartGame />;
     } else {
       return <LoginForm onLogin={handleLogin} />;
@@ -62,12 +61,9 @@ function App() {
     <div className="App">
       <header className="App-header">
 
-        {/* <div>
-         <button onClick={() => setActiveTab('host')}>Host Interface</button>
-         <button onClick={() => setActiveTab('player')}>Player Interface</button>
-       </div> */}
+
         {!isPlayer && activeTab === 'host' && <ComponentHost startGame={startGame} newGameSettings={savedNewGameSettings} />}
-        {isPlayer && activeTab === 'player' && <ComponentPlayer startGame={startGame} />}
+        {isPlayer && activeTab === 'player' && <ComponentPlayer />}
 
       </header>
     </div>
