@@ -46,24 +46,40 @@ class ArgConfig:
 
     # Static variables initialized as placeholders
     ENV = None
+    USE_PREDEFINED_JSON = False
+    IS_LOADED = False
 
     @staticmethod
     def load_args():
+        if ArgConfig.IS_LOADED:
+            return
         """Parse and load command-line arguments."""
         parser = argparse.ArgumentParser(description="Parse command-line arguments.")
 
         # Define the arguments
         parser.add_argument("--env", type=str, default="prod", help="Specify the environment")
+        parser.add_argument("--env_use_predefined_json", type=bool, default="false", help="Specify save path")
 
         # Parse the arguments
         args = parser.parse_args()
 
         # Assign to static variables
         ArgConfig.ENV = args.env if 'env' in args else 'prod'
+        env_use_predefined_json = True if 'env_use_predefined_json' in args else False
+        ArgConfig.USE_PREDEFINED_JSON = env_use_predefined_json
+        ArgConfig.IS_LOADED = True
 
     @staticmethod
     def is_dev():
+        ArgConfig.load_args()
         return ArgConfig.ENV == 'dev'
+
+    @staticmethod
+    def is_env_use_predefined_json():
+        ArgConfig.load_args()
+        return ArgConfig.USE_PREDEFINED_JSON
+
+
 
 def to_dict(obj):
     """Recursively converts an object to a dictionary."""

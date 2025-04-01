@@ -34,8 +34,10 @@ class AGame:
         self.players: Dict[str, Player] = dict()
         self.server_manager = server_manager
         self.game_state = GameState.running.name
-        self.finalized = False  # if game is finalized, no new entries are allowed
+        self.finalized = False  # if game is finalized, no new entries are allowed        
+        self.player_ids_list = []
         self.game_save_handler = game_save_handler
+
 
     @abstractmethod
     def check_signals(self):
@@ -105,6 +107,7 @@ class AGame:
                 #    self.server_manager.unregister_player(p)
 
     def finalize_game(self):
+        # if game is finalized no new players can join
         self.finalized = True
 
     def finish_game(self):
@@ -135,6 +138,8 @@ class AGame:
                 # if player is already registered, restore it's score
                 player.score = self.players[player_id].score
             self.players[player.player_id] = player
+            if player_id not in self.player_ids_list:
+                self.player_ids_list.append(player.player_id)
 
     def unregister_player(self, player: Player):
         if player is not None:
@@ -143,6 +148,8 @@ class AGame:
             else:
                 player_id = player.player_id
             del self.players[player_id]
+            if player_id in self.player_ids_list:
+                self.player_ids_list.remove(player_id)
 
     def register_host(self, player: Player):
         self.host = player
@@ -152,19 +159,25 @@ class AGame:
 class SIGame(AGame):
 
     DEFAULT_SIGNAL_ACCUMULATION_TIME = 1  # seconds
-    DEFAULT_TIMER_COUNTDOWN = 6  # seconds
+    DEFAULT_TIMER_COUNTDOWN = 5  # seconds
     DEFAULT_NOMINALS = [10, 20, 30,40, 50]
+
 
     def __init__(self, server_manager, game_save_handler, number_of_rounds=DEFAULT_NUMBER_OF_ROUNDS):
         super().__init__(server_manager, game_save_handler)
+
         self.nominals: List[int] = SIGame.DEFAULT_NOMINALS
         self.nominal_index: int = 0
         self.question_number = 0
         self.current_nominal: int = self.nominals[self.nominal_index]
         self.current_round = 1
-        self.number_of_rounds = number_of_rounds
         self.allow_multiple_answers = False
         self.game_stats = list()
+
+        self.number_of_rounds = number_of_rounds
+        self.round_stats = [[{} for _ in range(len(self.nominals))] for _ in range(self.number_of_rounds)]
+        self.current_round_stats = self.round_stats[self.current_round]
+        self.number_of_question_in_round = 0
 
         # resettable variables
         self.is_host_notified_on_first_signal: bool = False
@@ -177,6 +190,7 @@ class SIGame(AGame):
         self.failed_responders_ids: List[int] = []
         self.time_left: int = SIGame.DEFAULT_TIMER_COUNTDOWN
         self.question_stats: Dict[str, int] = dict()
+
         # keeps question stats: for each answered player it shows whether answer was correct (True) or not (False)
 
     def reset(self, is_after_incorrect_answer: bool = False):
@@ -208,8 +222,26 @@ class SIGame(AGame):
         status['finalized'] = 1 if self.finalized else 0
         status["game_stats"] = self.game_stats
         status['game_id'] = self.game_id
+        status['round_number'] = self.current_round
+        status['round_name'] = "Париж и пригороды"
+        status['current_round_stats'] = self._generate_current_round_array()
         result = dict(status=status)
         result = to_dict(result)
+        return result
+
+    def _generate_current_round_array(self):
+        result = list()
+        for p in self.player_ids_list:
+            player_data = list()
+            player = self.players[p]
+            player_data.append(player.name)
+            player_data.append(player.score)
+            for s in self.current_round_stats:
+                if p in s:
+                    player_data.append(s[p])
+                else:
+                    player_data.append(0)
+            result.append(player_data)
         return result
 
     def log_stats(self):
@@ -220,11 +252,16 @@ class SIGame(AGame):
     def roll_to_next_question(self):
         self.log_stats()
         self.question_number += 1
+
+        self.number_of_question_in_round += 1
+        self.number_of_question_in_round = self.number_of_question_in_round % len(self.nominals)
+
         self.nominal_index = (self.nominal_index + 1) % len(self.nominals)
         if self.current_round < self.number_of_rounds:
             if self.nominal_index == 0:
                 self.current_round += 1
             self.current_nominal = self.nominals[self.nominal_index]
+            self.current_round_stats = self.round_stats[self.current_round]
             self.reset()
         else:
             self.reset()
@@ -248,6 +285,7 @@ class SIGame(AGame):
             if decision == HostDecision.accept:
                 responder.score += self.current_nominal
                 self.question_stats[responder.player_id] = 1
+                self.current_round_stats[self.number_of_question_in_round] = self.question_stats
                 self.roll_to_next_question()
             else:
                 responder.score -= self.current_nominal
@@ -256,6 +294,7 @@ class SIGame(AGame):
                 self.is_accepting_signals = True
                 self.question_state = QuestionState.running
                 self.reset(is_after_incorrect_answer=True)
+                self.current_round_stats[self.number_of_question_in_round] = self.question_stats
                 self.update_status()
 
     def process_signal(self, signal: Signal):
@@ -323,17 +362,14 @@ class SIGame(AGame):
             # if signal is received, stopping countdown
             timer.cancel()
         if self.time_left > 0:
-            logger.info(f"{self.time_left} seconds left")
-            self.time_left -= interval
             self.update_status()
+            self.time_left -= interval
         else:
-            logger.info(f"time expired, canceling timer and rolling over to next question")
             self.roll_to_next_question()
             self.update_status()
             timer.cancel()
 
     def start_timer(self, interval=1):
-        logger.info(f"starting timer with {self.time_left} seconds left")
         timer = Timer(interval, self.start_timer, [interval])
         self._run_timer(timer, interval)
         timer.start()

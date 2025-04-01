@@ -3,6 +3,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import callAPI from './callAPI';
 
 import { handlePlayerLoop, generatePlayerSummary } from "./gameFlow";
+import RoundStatsTable from "./RoundStatsTable";
 
 const POSSIBLE_STATES = {
     AUTO_JOIN: 'AUTO_JOIN',
@@ -20,8 +21,6 @@ function ComponentPlayer({ startGame }) {
     const [gameID, setGameID] = useState(null);
     const [savedPlayer, setSavedPlayer] = useState(null);
     const [gameStatus, setGameStatus] = useState(null);
-
-
 
     const [loading, setLoading] = useState(false);
 
@@ -68,6 +67,8 @@ function ComponentPlayer({ startGame }) {
 
     }
 
+    const disable = false;
+
     const handleJoinGame = async (event) => {
 
         if (!savedPlayer?.player_id || !savedPlayer?.name) {
@@ -103,9 +104,6 @@ function ComponentPlayer({ startGame }) {
 
     return (
         <div>
-            <h2>Player Interface</h2>
-
-
             {gameState === POSSIBLE_STATES.NOT_EXIST && <button onClick={() => logout()}>Something broke</button>}
             {gameState === POSSIBLE_STATES.CREATED && (
                 <div>
@@ -116,7 +114,7 @@ function ComponentPlayer({ startGame }) {
 
             {gameState === POSSIBLE_STATES.STARTED && (
                 <div>
-                    <h3>Game ID: {gameID}</h3>
+                    <h2>Тема: {gameStatus?.round_number}: {gameStatus?.round_name}</h2>
                     {gameStatus?.question_state === "fake" && (
                         <div>
                             <p>Game Status: {JSON.stringify(gameStatus)}</p>
@@ -124,19 +122,22 @@ function ComponentPlayer({ startGame }) {
                     )}
 
                     {gameStatus?.question_state === "running" && (
+
+
                         <div>
-                            <p>Playing for: {gameStatus.nominal}</p>
-                            <p>Time Remaining: {gameStatus.time_left} seconds</p>
+
+                            <RoundStatsTable data={gameStatus.current_round_stats} />
+
                             <button class="round-button" onClick={() => sendMessage({
                                 action: "signal",
                                 player_id: savedPlayer.player_id,
                                 local_ts: Date.now(),
 
-                            })}> {gameStatus.time_left <5 ? gameStatus.time_left : "ANSWER"}</button>
+                            })}> {gameStatus.time_left <5 ? gameStatus.time_left : "Тыц!"}</button>
                         </div>
                     )}
 
-                    {gameStatus?.question_state === "false" &&
+                    {disable &&
                     (
                     <button onClick={() => logout()}>Quit game</button>
                     )
@@ -144,9 +145,10 @@ function ComponentPlayer({ startGame }) {
 
                 </div>)}
 
-            {gameState === POSSIBLE_STATES.ENDED && <button onClick={() => logout()}>Game over</button>}
 
-            {generatePlayerSummary(gameStatus?.players, savedPlayer?.player_id)}
+            {disable && gameState === POSSIBLE_STATES.ENDED && <button onClick={() => logout()}>Game over</button>}
+
+            {disable && generatePlayerSummary(gameStatus?.players, savedPlayer?.player_id)}
 
 
 

@@ -5,6 +5,11 @@ import json
 import pymysql
 
 
+from backend.app.util.util import ArgConfig
+
+
+
+
 class GenericDataProvider:
     def __init__(self):
         db_config = os.getenv("SI_DB_CONFIG")
@@ -35,13 +40,18 @@ class GenericDataProvider:
 
             self.use_predefined_json = False  # Flag to indicate if predefined JSON data should be used
 
+
+
             env_use_predefined_json = os.getenv("SI_SAVE_JSON")
-            if env_use_predefined_json is None or env_use_predefined_json.lower() == "true":
+            if env_use_predefined_json is None:
+                env_use_predefined_json = ArgConfig.is_env_use_predefined_json()
+            if env_use_predefined_json is not None and env_use_predefined_json.lower() == "true":
                 self.use_predefined_json = True
                 # Load predefined JSON data from a file if the file exists
                 if os.path.exists("data.json"):
                     with open("data.json", "r") as f:
                         self.data = json.load(f)
+
 
             self.lookup_one_by_id = self.lookup_one_by_id_json
             self.lookup_one_by_field = self.lookup_one_by_field_json
