@@ -84,7 +84,7 @@ function ComponentPlayer({ startGame }) {
         }
 
 
-        messanger.current = handlePlayerLoop(savedPlayer.name, gameID, handleSetGameStatus, savedPlayer.player_id);
+        messanger.current = handlePlayerLoop(savedPlayer.name, gameID, handleSetGameStatus, savedPlayer.player_id, window.location.href);
     }
 
 

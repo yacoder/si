@@ -97,7 +97,7 @@ function LoginForm({ onLogin }) {
         handleSubmit(e, true, false);
     }
     const handleSubmitPlayer = async (e) => {
-        handleSubmit(e, false);
+        handleSubmit(e, false, true);
     }
 
 
