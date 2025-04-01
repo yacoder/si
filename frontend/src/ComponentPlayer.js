@@ -134,7 +134,10 @@ function ComponentPlayer({ startGame }) {
 
                         <div>
 
-                            <RoundStatsTable data={gameStatus.current_round_stats} />
+                            <RoundStatsTable data={gameStatus.current_round_stats}
+                            number_of_question_in_round={gameStatus.number_of_question_in_round}
+                            nominals={gameStatus.nominals}
+                             />
 
                             <button class="round-button" onClick={() => sendMessage({
                                 action: "signal",

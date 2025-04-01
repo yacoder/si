@@ -172,13 +172,10 @@ function ComponentHost({ startGame, autostartNumRounds }) {
 
             {gameState === POSSIBLE_STATES.STARTED && (
                 <div>
-                    <h3>Game In Progress</h3>
-
                     <p>Host Token:{sessionStorage.getItem('authToken')}, Token: {hostData.token}</p>
 
                     {gameStatus?.question_state === "running" && (
                         <div>
-                            <p>Playing for: {gameStatus.nominal}</p>
                             <p>Time Remaining: {gameStatus.time_left} seconds</p>
                             <button onClick={() => sendMessage({ action: "start_timer" })}>Start Timer</button>
                         </div>
@@ -215,7 +212,10 @@ function ComponentHost({ startGame, autostartNumRounds }) {
             )}
 
             {false && generatePlayerSummary(gameStatus?.players, null)}
-            {gameStatus?.current_round_stats && <RoundStatsTable data={gameStatus?.current_round_stats} />}
+            {gameStatus?.current_round_stats
+
+            && <RoundStatsTable data={gameStatus?.current_round_stats} number_of_question_in_round={gameStatus?.number_of_question_in_round}
+                            nominals={gameStatus?.nominals} />}
 
             {gameState === POSSIBLE_STATES.STARTED && (
                 <div>
