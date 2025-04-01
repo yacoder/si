@@ -225,25 +225,29 @@ button:hover {
     white-space: nowrap; /* Prevent wrapping */
 }
 
-/* Leave Button Styling */
 .leave-button {
-    background-color: #dc3545;
-    color: white;
-    border: none;
-    padding: 5px 15px; /* Reduced padding to make it smaller */
-    font-size: 14px; /* Smaller font size */
+    background-color: #ffdddd; /* Бледно-красный */
+    color: #aa0000; /* Темно-красный текст */
+    border: 1px solid #ffaaaa; /* Светло-красная рамка */
+    padding: 5px 10px;
+    font-size: 14px;
     cursor: pointer;
     border-radius: 5px;
-    white-space: nowrap; /* Prevent wrapping */
+    white-space: nowrap;
+    width: auto;
+    min-width: fit-content;
+    transition: background-color 0.2s, color 0.2s;
 }
 
 .leave-button:hover {
-    background-color: #c82333;
+    background-color: #ffbbbb; /* Чуть насыщеннее при наведении */
+    color: #880000;
 }
+
 
 /* Lag Info Styling */
 .top-bar span {
-    font-size: 14px; /* Smaller font size for lag info */
+    font-size: 12px; /* Smaller font size for lag info */
 }
 
 /* Game Token Styling */

@@ -24,10 +24,9 @@ function ComponentPlayer({ startGame }) {
     const [gameID, setGameID] = useState(null);
     const [savedPlayer, setSavedPlayer] = useState(null);
     const [gameStatus, setGameStatus] = useState(null);
+    const [lag, setLag] = useState(0);
     const [gameName, setGameName] = useState("");
     const [currentNominal, setCurrentNominal] = useState(null);
-    const [clientServerLag, setClientServerLag ] = useState(0);
-    const [serverClientLag, setServerClientLag ] = useState(0);
 
     const [loading, setLoading] = useState(false);
 
@@ -123,8 +122,7 @@ function ComponentPlayer({ startGame }) {
     <div>
         <div className="top-bar">
             <button onClick={logout} className="leave-button">Выйти из игры</button>
-            <span>⏳ Клиент → Сервер: {clientServerLag.toFixed(2)} ms</span>
-            <span>⏳ Сервер → Клиент: {serverClientLag.toFixed(2)} ms</span>
+            <span>⏳ Lag: {lag.toFixed(2)} ms</span>
             <span>🎮 Токен игры: {gameName}</span>
         </div>
 

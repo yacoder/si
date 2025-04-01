@@ -87,8 +87,8 @@ def websocket_connection(ws, server_manager: SIServerManager):
                 local_ts = data.get("local_ts")
                 game = server_manager.get_game_by_player_id(player_id)
                 if game is not None:
-                    client_server_lag = server_manager.ntp_manager.get_client_server_lag(player_id)
-                    adjusted_ts = local_ts - client_server_lag
+                    lag = server_manager.ntp_manager.get_lag(player_id)
+                    adjusted_ts = local_ts - lag
                     signal: Signal = Signal(player_id, now(), local_ts, adjusted_ts)
                     server_manager.get_game_by_player_id(player_id).process_signal(signal)
                 result = {"status": "OK"}
@@ -126,9 +126,8 @@ def websocket_connection(ws, server_manager: SIServerManager):
                 ws.send(f"{result}")
             elif action == "offset_check":
                 data['server_in_ts'] = now()
-                client_sever_lag, server_client_lag = server_manager.process_offset_check(data)
-                result = dict(action="offset_check_result", client_sever_lag=client_sever_lag,
-                              server_client_lag=server_client_lag)
+                lag = server_manager.process_lag_check(data)
+                result = dict(action="offset_check_result", lag=lag)
                 ws.send(f"{result}")
 
         except Exception as e:
