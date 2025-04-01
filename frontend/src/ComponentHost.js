@@ -174,7 +174,7 @@ function ComponentHost({ startGame, autostartNumRounds }) {
                 <div>
                     <h3>Game In Progress</h3>
 
-                    <p>Game ID:{gameID}, Token: {hostData.token}</p>
+                    <p>Host Token:{sessionStorage.getItem('authToken')}, Token: {hostData.token}</p>
 
                     {gameStatus?.question_state === "running" && (
                         <div>
