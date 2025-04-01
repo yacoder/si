@@ -37,91 +37,133 @@ export const generatePlayerSummary = (players, player_id) => {
 export const handleLoop = (name, setHostData, setScreen, setGameStatus, screen,
     host_or_player_id = null, game_id = null, additional_game_params = {}, url = null) => {
 
+    let currentSocket = null; // Declare currentSocket variable
+    let numberOfRetries = 1;
+    let gameStartedID = null;
 
-    // Open a WebSocket connection
-    const socket = new WebSocket(calculateSocketFromHost(url));
+    const getCurrentSocket = () => {
+        return currentSocket;
+    }
 
-    socket.onopen = () => {
-        console.log("WebSocket connection opened");
+    const attemptToReconnect = () => {
+        // start timer to reconnect
+        setTimeout(() => {
+            console.log("Attempting to reconnect...");
 
-
-
-        // Send JSON message with action and host_name
-        if (screen === "start") {
-            const message = {
-                action: "start_game",
-                host_name: name,
-                host_id: host_or_player_id,
-                ...additional_game_params,
-            };
-            socket.send(JSON.stringify(message));
-            console.log("Message sent:", message);
-        } else if (screen === "reconnect") {
-            const message = {
-                action: "host_reconnect",
-                game_id: game_id,
-            };
-            socket.send(JSON.stringify(message));
-            console.log("Message sent:", message);
-        } else if (screen === "player_start") {
-            const message = {
-                "action": "register",
-                "name": name,
-                "game_id": game_id,
-                "player_id": host_or_player_id,
-            };
-            socket.send(JSON.stringify(message));
-            console.log("Message sent:", message);
-
-        }
-
-    };
-
-    socket.onmessage = (message) => {
-        try {
-            console.log("Message received:", message);
-            let data = message.data;
-            console.log("Data received:", data);
-            data = data.replace(/'/g, '"');
-            data = JSON.parse(data);
-
-            if (screen === "start" || screen === "reconnect") {
-                // Save host data and navigate to Host Screen
-                if (data.host) {
-                    console.log("Host:", data['host']);
-                    setHostData(data.host); // Save host details
-                    setScreen("host"); // Switch to Host Screen
-                }
-                console.log("Message received:", data);
+            if (numberOfRetries < 100) {
+                numberOfRetries++;
+                currentSocket = createSocket(); // Create a new socket instance
+            } else {
+                console.error("Max retries reached. Unable to reconnect.");
+                // TODO: add better error reporting
             }
-            try {
-                if (data.status) {
-                    console.log("setting status", data.status);
-                    setGameStatus(data.status); // Update game status
-                }
+        }, 1000 * (numberOfRetries > 20 ? 20 : numberOfRetries)); // Retry every 1/2/20 seconds then continue at 20 seconds
+    }
 
-                if (data.action && data.action === "offset_check") {
-                    console.log("checking offset for host", data.offset_check);
-                    data['client_ts'] = Date.now();
-                    socket.send(JSON.stringify(data));
+    const createSocket = () => {
+        // Open a WebSocket connection
+        const socket = new WebSocket(calculateSocketFromHost(url));
+
+        socket.onopen = () => {
+            console.log("WebSocket connection opened");
+            numberOfRetries = 1;
+
+            // Send JSON message with action and host_name
+            if (screen === "start") {
+                const message = gameStartedID ? {
+                    action: "host_reconnect",
+                    game_id: gameStartedID,
+                } : {
+                    action: "start_game",
+                    host_name: name,
+                    host_id: host_or_player_id,
+                    ...additional_game_params,
+                };
+                socket.send(JSON.stringify(message));
+                console.log("Message sent:", message);
+            } else if (screen === "reconnect") {
+                const message = {
+                    action: "host_reconnect",
+                    game_id: game_id,
+                };
+                socket.send(JSON.stringify(message));
+                console.log("Message sent:", message);
+            } else if (screen === "player_start") {
+                const message = {
+                    "action": "register",
+                    "name": name,
+                    "game_id": game_id,
+                    "player_id": host_or_player_id,
+                };
+                socket.send(JSON.stringify(message));
+                console.log("Message sent:", message);
+
+            }
+
+        };
+
+        socket.onmessage = (message) => {
+            try {
+                console.log("Message received:", message);
+                let data = message.data;
+                console.log("Data received:", data);
+                data = data.replace(/'/g, '"');
+                data = JSON.parse(data);
+
+                if (screen === "start" || screen === "reconnect") {
+                    // Save host data and navigate to Host Screen
+                    if (data.host) {
+                        gameStartedID = data.id;
+                        console.log("Host:", data['host'], "starting game:", gameStartedID);
+                        setHostData(data.host); // Save host details
+                        setScreen("host"); // Switch to Host Screen
+
+                    }
+                    console.log("Message received:", data);
+                }
+                try {
+                    if (data.status) {
+                        console.log("setting status", data.status);
+                        setGameStatus(data.status); // Update game status
+                    }
+
+                    if (data.action && data.action === "offset_check") {
+                        console.log("checking offset for host", data.offset_check);
+                        data['client_ts'] = Date.now();
+                        socket.send(JSON.stringify(data));
+                    }
+                } catch (error) {
+                    console.error("Error processing incoming status update:", error);
                 }
             } catch (error) {
-                console.error("Error processing incoming status update:", error);
+                console.error("Error processing incoming message:", error);
             }
-        } catch (error) {
-            console.error("Error processing incoming message:", error);
-        }
-    };
+        };
 
-    socket.onerror = (error) => {
-        console.error("WebSocket error:", error);
-    };
+        socket.onerror = (error) => {
+            console.error("WebSocket error:", error);
+            // attemptToReconnect(); // Attempt to reconnect on error
+        };
 
-    socket.onclose = () => {
-        console.log("WebSocket connection closed");
-    };
+        socket.onclose = () => {
+            console.log("WebSocket connection closed");
+            attemptToReconnect(); // Attempt to reconnect on close
+        };
+
+        return socket; // Return the socket instance
+    }
+
+    currentSocket = createSocket(); // Call the function to create the socket
+
+
+
 
     return function (message) {
+        const socket = getCurrentSocket();
+        if (!socket) {
+            console.error("WebSocket is not initialized.");
+            return;
+        }
         socket.send(JSON.stringify(message));
         console.log("Message sent:", message);
     }

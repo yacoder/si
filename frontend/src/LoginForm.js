@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import Cookies from 'js-cookie';
 
@@ -25,32 +25,57 @@ function LoginForm({ onLogin }) {
     const [hostName, setHostName] = useState('');
     const [playerName, setPlayerName] = useState(generateRandomString(5));
     const [hostEmail, setHostEmail] = useState('');
+    const [displayHostToken, setDisplayHostToken] = useState(SHOW_HOST_TOKEN);
 
     const [error, setError] = useState('');
 
-    const handleSubmit = async (e) => {
+    useEffect(() => {
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.get('token')) {
+            setUserToken(urlParams.get('token'));
+        }
+        if (urlParams.get('game_token')) {
+            setGameToken(urlParams.get('game_token'));
+        }
+        if (urlParams.get('display_token')) {
+            setDisplayHostToken(urlParams.get('display_token') === 'true');
+        }
+    }, []);
+
+
+    const handleSubmit = async (e, isHost) => {
         e.preventDefault();
         try {
             let userTokenToUse = userToken;
 
             if (SIMPLE_LOGIN_FORM) {
-                if (!userTokenToUse && hostName) {
+                if (!userTokenToUse && isHost) {
                     userTokenToUse = generateRandomString(10);
                 }
             }
-            const response = await axios.post('/auth', {
-                token: userTokenToUse,
-                player_data: {
-                    name: playerName,
-                    game_token: gameToken,
-                },
-                user_data: {
-                    name: hostName,
+            const request = {
+                token: userTokenToUse
+            }
+            if (isHost) {
+                let hostNameToUse = hostName;
+                if (SIMPLE_LOGIN_FORM && !hostNameToUse) {
+                    hostNameToUse = "Ведущий";
+                }
+                request.user_data = {
+                    name: hostNameToUse,
                     email: hostEmail,
                     rounds_num: numRounds,
                     simple_game_start: SIMPLE_LOGIN_FORM,
-                },
-            });
+                };
+            } else {
+                request.player_data = {
+                    name: playerName,
+                    game_token: gameToken,
+                };
+            }
+            const response = await axios.post('/auth', request);
+
+
 
             const { token } = response.data;
             Cookies.set('authToken', token);
@@ -63,12 +88,21 @@ function LoginForm({ onLogin }) {
         }
     };
 
+    const handleSubmitHost = async (e) => {
+        handleSubmit(e, true);
+    }
+    const handleSubmitPlayer = async (e) => {
+        handleSubmit(e, false);
+    }
+
+
+
     return (
         <div class="parent">
             <form class="login-form" onSubmit={handleSubmit}>
                 <div>
                     <h2>Начать Новую Игру</h2>
-                    {(!SIMPLE_LOGIN_FORM || SHOW_HOST_TOKEN) && (
+                    {(!SIMPLE_LOGIN_FORM || displayHostToken) && (
                         <input
                             type="text"
                             value={userToken}
@@ -96,7 +130,7 @@ function LoginForm({ onLogin }) {
                         onChange={(e) => setNumRounds(e.target.value)}
                         placeholder="Количество тем"
                     />
-                    <button type="submit">Start Game</button>
+                    <button onClick={handleSubmitHost}>Start Game</button>
                 </div>
 
                 <div>
@@ -113,7 +147,7 @@ function LoginForm({ onLogin }) {
                         onChange={(e) => setGameToken(e.target.value)}
                         placeholder="Токен Игры"
                     />
-                    <button type="submit">Присоединиться</button>
+                    <button onClick={handleSubmitPlayer}>Присоединиться</button>
                 </div>
 
                 <div>

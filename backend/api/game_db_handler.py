@@ -96,15 +96,20 @@ class GameDataProvider:
         Returns the game data as a dictionary.
         """
         if not game_id:
-            return {}
+            return None
         game = self.data_provider.lookup_one_by_id("games", game_id)
         if not game:
-            return {}
-        tournament = self.data_provider.lookup_one_by_id("tournaments", game["tournament_id"])
-        return {
-            "tournament": tournament,
-            "game": game,
-        }
+             game = self.data_provider.lookup_one_by_field("games", "token", game_id)
+        if not game:
+            return None
+        game_data = game.get("data", {})
+        if isinstance(game_data, str):
+            game_data = json.loads(game_data)
+            game["data"] = game_data
+        game["game_id"] = game["id"]
+        return game
+    
+
     
     def get_tournament_data(self, tournament_id:str):
         """
