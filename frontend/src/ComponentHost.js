@@ -1,8 +1,10 @@
-// src/PrepareDataBasedOnURL.js
-
 import React, { useState, useEffect, useCallback, useRef } from 'react';
+
+import { useTranslation } from "react-i18next";
+import "./i18n"; // Import i18n initialization
+
 import callAPI from './callAPI';
-import { handleLoop as handleHostLoop, generatePlayerSummary } from "./gameFlow";
+import { handleLoop as handleHostLoop } from "./gameFlow";
 import RoundStatsTable from "./RoundStatsTable";
 
 const POSSIBLE_STATES = {
@@ -16,12 +18,13 @@ const POSSIBLE_STATES = {
 
 
 function ComponentHost({ startGame, autostartNumRounds }) {
+    const { t, i18n } = useTranslation(); // Hook for translations
 
     const [gameState, setGameState] = useState(startGame ? POSSIBLE_STATES.AUTO_START : POSSIBLE_STATES.NOT_EXIST);
     const [loading, setLoading] = useState(false);
 
 
-    const [name, setName] = useState("Test Game"); // Name input value (default: AAA)
+    const [name, setName] = useState(t("defaultGameName")); // Name input value (default: AAA)
     const [hostData, setHostData] = useState(null); // Stores host data from the WebSocket
     const [gameStatus, setGameStatus] = useState(null); // Stores game status updates from the WebSocket
     const [reconnectGameID, setReconnectGameID] = useState(null); // Stores game ID for reconnection
@@ -31,6 +34,9 @@ function ComponentHost({ startGame, autostartNumRounds }) {
     const [showRoundNameEdits, setShowRoundNameEdits] = useState(false); // Flag to show/hide round name edits
 
 
+    const handleLanguageChange = (lang) => {
+        i18n.changeLanguage(lang); // Change language dynamically
+    };
 
 
     const switchStatus = (status) => {
@@ -145,39 +151,46 @@ function ComponentHost({ startGame, autostartNumRounds }) {
 
     return (
         <div>
-            <h2>Host Interface</h2>
+            <h2>{t("hostInterface")}</h2>
+            {false && (
+                <div>
+                    <button onClick={() => handleLanguageChange("en")}>English</button>
+                    <button onClick={() => handleLanguageChange("ru")}>Русский</button>
+                </div>
+            )}
+
             {(gameState === POSSIBLE_STATES.NOT_EXIST || gameState === POSSIBLE_STATES.ENDED) && (
                 <div>
-                    <h3>No Games Started</h3>
-                    <p>Click the button below to create a new game.</p>
+                    <p>{t("createNewGame")}</p>
                     <input
                         type="text"
-                        placeholder="Number of rounds"
+                        placeholder={t("numberOfRounds")}
                         value={numRounds}
                         onChange={(e) => setNumRounds(e.target.value)}
                     />
-                    <button onClick={handleCreateGame}>Create Game</button>
+                    <button onClick={handleCreateGame}>{t("createGame")}</button>
                     <br />
-                    <p>Or reconnect to an existing game.</p>
+                    <p>{t("reconnectGame")}</p>
                     <input
                         type="text"
                         placeholder="Game ID"
                         value={reconnectGameID}
                         onChange={(e) => setReconnectGameID(e.target.value)}
                     />
-                    <button onClick={handleReconnectGame}>Reconnect to existing game</button>
-                    <button onClick={() => logout()}>Quit to login</button>
+                    <button onClick={handleReconnectGame}>{t("reconnectGame")}</button>
+                    <button onClick={logout}>{t("quitToLogin")}</button>
                 </div>
             )}
 
             {gameState === POSSIBLE_STATES.STARTED && (
                 <div>
-                    <p>Host Token:{sessionStorage.getItem('authToken')}, Token: {hostData.token}</p>
+                    <p>{t("hostToken")}: {sessionStorage.getItem('authToken')}, {t("gameToken")}: {hostData?.token}</p>
+                    <h2>{t("round")} {gameStatus?.round_number}: {gameStatus?.round_name} </h2>
 
                     {gameStatus?.question_state === "running" && (
                         <div>
-                            <p>Time Remaining: {gameStatus.time_left} seconds</p>
-                            <button onClick={() => sendMessage({ action: "start_timer" })}>Start Timer</button>
+                            <p>{t("timeRemaining")}: {gameStatus.time_left} {t("seconds")}</p>
+                            <button onClick={() => sendMessage({ action: "start_timer" })}>{t("startTimer")}</button>
                         </div>
                     )}
 
@@ -185,63 +198,59 @@ function ComponentHost({ startGame, autostartNumRounds }) {
                         <div>
                             {gameStatus.responders?.length && (
                                 <div>
-                                    <p>Answering for: {gameStatus.nominal}</p>
-                                    <p>First button: {gameStatus.responders[0].name}</p>
+                                    <p>{t("answeringFor")}: {gameStatus.nominal}</p>
+                                    <p>{t("firstButton")}: {gameStatus.responders[0].name}</p>
                                     <button onClick={() => sendMessage({
-                                        "action": "host_decision",
-                                        "host_decision": "accept"
-                                    })}>Correct</button>
+                                        action: "host_decision",
+                                        host_decision: "accept"
+                                    })}>{t("correct")}</button>
                                     <button onClick={() => sendMessage({
-                                        "action": "host_decision",
-                                        "host_decision": "decline"
-                                    })}>Wrong</button>
+                                        action: "host_decision",
+                                        host_decision: "decline"
+                                    })}>{t("wrong")}</button>
                                     <button onClick={() => sendMessage({
-                                        "action": "host_decision",
-                                        "host_decision": "cancel"
-                                    })}>Cancel</button>
+                                        action: "host_decision",
+                                        host_decision: "cancel"
+                                    })}>{t("cancel")}</button>
                                 </div>
                             )}
-
-
                         </div>
                     )}
-
-
-
                 </div>
             )}
 
-            {false && generatePlayerSummary(gameStatus?.players, null)}
-            {gameStatus?.current_round_stats
 
-            && <RoundStatsTable data={gameStatus?.current_round_stats} number_of_question_in_round={gameStatus?.number_of_question_in_round}
-                            nominals={gameStatus?.nominals} />}
+            {gameStatus?.current_round_stats &&
+                <RoundStatsTable
+                    data={gameStatus?.current_round_stats}
+                    number_of_question_in_round={gameStatus?.number_of_question_in_round}
+                    nominals={gameStatus?.nominals} />}
 
             {gameState === POSSIBLE_STATES.STARTED && (
                 <div>
                     {showRoundNameEdits && (
                         <div>
-                            <h3>Темы</h3>
+                            <h3>{t("setTopics")}</h3>
                             <textarea
-                                placeholder="Round Names (one per line)"
+                                placeholder={t("roundNamesPlaceholder")}
                                 value={roundNames}
                                 onChange={(e) => setRoundNames(e.target.value)}
                                 rows={numRounds || 5}
-                                style={{ width: "100%" }} // Optional: Make it full width
+                                style={{ width: "100%" }}
                             />
-                            <button onClick={handleSetRoundNames}>Задать темы</button>
+                            <button onClick={handleSetRoundNames}>{t("setTopics")}</button>
                         </div>
                     )}
                     {!showRoundNameEdits && (
-                        <button onClick={() => setShowRoundNameEdits(true)}>Задать темы</button>
+                        <button onClick={() => setShowRoundNameEdits(true)}>{t("setTopics")}</button>
                     )}
-                    <button onClick={handleEndGame}>End Game</button>
+                    <button onClick={handleEndGame}>{t("endGame")}</button>
                 </div>
             )}
 
 
 
-            {loading && <p>Loading...</p>}
+            {loading && <p>{t("loading")}</p>}
 
 
         </div>

@@ -2,6 +2,9 @@ import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import Cookies from 'js-cookie';
 
+import { useTranslation } from "react-i18next";
+import "./i18n"; // Import i18n initialization
+
 function generateRandomString(length) {
     const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
     let result = '';
@@ -15,9 +18,9 @@ function generateRandomString(length) {
 }
 
 const SIMPLE_LOGIN_FORM = true;
-const SHOW_HOST_TOKEN = false;
 
 function LoginForm({ onLogin }) {
+    const { t, i18n } = useTranslation(); // Hook for translations
 
     const [userToken, setUserToken] = useState('');
     const [gameToken, setGameToken] = useState('10001');
@@ -25,7 +28,6 @@ function LoginForm({ onLogin }) {
     const [hostName, setHostName] = useState('');
     const [playerName, setPlayerName] = useState(generateRandomString(5));
     const [hostEmail, setHostEmail] = useState('');
-    const [displayHostToken, setDisplayHostToken] = useState(SHOW_HOST_TOKEN);
 
 
 
@@ -38,9 +40,6 @@ function LoginForm({ onLogin }) {
         }
         if (urlParams.get('game_token')) {
             setGameToken(urlParams.get('game_token'));
-        }
-        if (urlParams.get('display_token')) {
-            setDisplayHostToken(urlParams.get('display_token') === 'true');
         }
     }, []);
 
@@ -100,60 +99,68 @@ function LoginForm({ onLogin }) {
         handleSubmit(e, false, true);
     }
 
-
+    const handleLanguageChange = (lang) => {
+        i18n.changeLanguage(lang); // Change language dynamically
+    };
 
     return (
+
         <div class="parent">
-            <form class="login-form" onSubmit={handleSubmit}>
+            {false && (
                 <div>
-                    <h2>Начать Новую Игру</h2>
-                    {(!SIMPLE_LOGIN_FORM || displayHostToken) && (
-                        <input
-                            type="text"
-                            value={userToken}
-                            onChange={(e) => setUserToken(e.target.value)}
-                            placeholder="Enter User Token"
-                        />
-                    )}
+                    <button onClick={() => handleLanguageChange("en")}>English</button>
+                    <button onClick={() => handleLanguageChange("ru")}>Русский</button>
+                </div>
+            )}
+            <form class="login-form">
+                <div>
+                    <h2>{t("host")}</h2>
                     <input
                         type="text"
                         value={hostName}
                         onChange={(e) => setHostName(e.target.value)}
-                        placeholder="Имя Ведущего"
+                        placeholder={t("hostNamePlaceholder")}
                     />
                     {!SIMPLE_LOGIN_FORM && (
                         <input
                             type="email"
                             value={hostEmail}
                             onChange={(e) => setHostEmail(e.target.value)}
-                            placeholder="Email"
+                            placeholder={t("hostEmailPlaceholder")}
                         />
                     )}
                     <input
                         type="text"
                         value={numRounds}
                         onChange={(e) => setNumRounds(e.target.value)}
-                        placeholder="Количество тем"
+                        placeholder={t("numRoundsPlaceholder")}
                     />
-                    <button onClick={handleSubmitHostStart}>Quick Start Game</button>
-                    <button onClick={handleSubmitHost}>Login</button>
+                    <button onClick={handleSubmitHostStart}>{t("startNewGame")}</button>
+                    <h3>{t("hostCabinet")}</h3>
+                    <input
+                        type="text"
+                        value={userToken}
+                        onChange={(e) => setUserToken(e.target.value)}
+                        placeholder={t("hostCodePlaceholder")}
+                    />
+                    <button onClick={handleSubmitHost}>{t("goToGameSelection")}</button>
                 </div>
 
                 <div>
-                    <h2>Присоединиться к игре</h2>
+                    <h2>{t("player")}</h2>
                     <input
                         type="text"
                         value={playerName}
                         onChange={(e) => setPlayerName(e.target.value)}
-                        placeholder="Имя Игрока"
+                        placeholder={t("playerNamePlaceholder")}
                     />
                     <input
                         type="text"
                         value={gameToken}
                         onChange={(e) => setGameToken(e.target.value)}
-                        placeholder="Токен Игры"
+                        placeholder={t("gameTokenPlaceholder")}
                     />
-                    <button onClick={handleSubmitPlayer}>Присоединиться</button>
+                    <button onClick={handleSubmitPlayer}>{t("joinGame")}</button>
                 </div>
 
                 <div>
