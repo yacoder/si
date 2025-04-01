@@ -27,12 +27,14 @@ function LoginForm({ onLogin }) {
     const [hostEmail, setHostEmail] = useState('');
     const [displayHostToken, setDisplayHostToken] = useState(SHOW_HOST_TOKEN);
 
+
+
     const [error, setError] = useState('');
 
     useEffect(() => {
         const urlParams = new URLSearchParams(window.location.search);
-        if (urlParams.get('token')) {
-            setUserToken(urlParams.get('token'));
+        if (urlParams.get('user_token')) {
+            setUserToken(urlParams.get('user_token'));
         }
         if (urlParams.get('game_token')) {
             setGameToken(urlParams.get('game_token'));
@@ -43,7 +45,7 @@ function LoginForm({ onLogin }) {
     }, []);
 
 
-    const handleSubmit = async (e, isHost) => {
+    const handleSubmit = async (e, isHost, startGame) => {
         e.preventDefault();
         try {
             let userTokenToUse = userToken;
@@ -65,7 +67,7 @@ function LoginForm({ onLogin }) {
                     name: hostNameToUse,
                     email: hostEmail,
                     rounds_num: numRounds,
-                    simple_game_start: SIMPLE_LOGIN_FORM,
+                    simple_game_start: startGame,
                 };
             } else {
                 request.player_data = {
@@ -80,7 +82,7 @@ function LoginForm({ onLogin }) {
             const { token } = response.data;
             Cookies.set('authToken', token);
             sessionStorage.setItem('authToken', token);
-            onLogin({ startGame: SIMPLE_LOGIN_FORM, numRounds: numRounds });
+            onLogin({ startGame: startGame, numRounds: numRounds });
         } catch (err) {
 
             setError('Invalid credentials: ' + err.message);
@@ -88,8 +90,11 @@ function LoginForm({ onLogin }) {
         }
     };
 
+    const handleSubmitHostStart = async (e) => {
+        handleSubmit(e, true, true);
+    }
     const handleSubmitHost = async (e) => {
-        handleSubmit(e, true);
+        handleSubmit(e, true, false);
     }
     const handleSubmitPlayer = async (e) => {
         handleSubmit(e, false);
@@ -130,7 +135,8 @@ function LoginForm({ onLogin }) {
                         onChange={(e) => setNumRounds(e.target.value)}
                         placeholder="Количество тем"
                     />
-                    <button onClick={handleSubmitHost}>Start Game</button>
+                    <button onClick={handleSubmitHostStart}>Quick Start Game</button>
+                    <button onClick={handleSubmitHost}>Login</button>
                 </div>
 
                 <div>
