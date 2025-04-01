@@ -15,6 +15,7 @@ function generateRandomString(length) {
 }
 
 const SIMPLE_LOGIN_FORM = true;
+const SHOW_HOST_TOKEN = false;
 
 function LoginForm({ onLogin }) {
 
@@ -67,7 +68,7 @@ function LoginForm({ onLogin }) {
             <form class="login-form" onSubmit={handleSubmit}>
                 <div>
                     <h2>Начать Новую Игру</h2>
-                    {!SIMPLE_LOGIN_FORM && (
+                    {(!SIMPLE_LOGIN_FORM || SHOW_HOST_TOKEN) && (
                         <input
                             type="text"
                             value={userToken}
@@ -119,7 +120,7 @@ function LoginForm({ onLogin }) {
                     {error && <p style={{ color: 'red' }}>{error}</p>}
                 </div>
             </form>
-          </div>
+        </div>
     );
 }
 
