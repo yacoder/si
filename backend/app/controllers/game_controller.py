@@ -91,8 +91,8 @@ def websocket_connection(ws, server_manager: SIServerManager):
                 local_ts = data.get("local_ts")
                 game = server_manager.get_game_by_player_id(player_id)
                 if game is not None:
-                    offset = server_manager.ntp_manager.get_offset(player_id)
-                    adjusted_ts = local_ts + offset
+                    lag = server_manager.ntp_manager.get_lag(player_id)
+                    adjusted_ts = local_ts - lag
                     signal: Signal = Signal(player_id, now(), local_ts, adjusted_ts)
                     server_manager.get_game_by_player_id(player_id).process_signal(signal)
                 result = {"status": "OK"}
@@ -116,23 +116,24 @@ def websocket_connection(ws, server_manager: SIServerManager):
                 game = server_manager.get_game_by_id(game_id)
                 if game is not None:
                     game.finalize_game()
-            elif action == "offset_check":
-                data['server_in_ts'] = now()
-                server_manager.process_offset_check(data)
-                result = None
             elif action == "set_round_names":
                 game_id = data.get("game_id")
                 game = server_manager.get_game_by_id(game_id)
-                if game is not None:
+                if game is not None and hasattr(game, 'set_round_names'):
                     round_names_as_text = data.get("round_names", None)
                     game.set_round_names(round_names_as_text)
                     result = STATUS_OK
             else:
                 result = None
-
             if result is not None:
                 logger.info(f"Sending: {result}")
                 ws.send(f"{result}")
+            elif action == "offset_check":
+                data['server_in_ts'] = now()
+                lag = server_manager.process_lag_check(data)
+                result = dict(action="offset_check_result", lag=lag)
+                ws.send(f"{result}")
+
         except Exception as e:
             logger.error(f"Error: {e}")
             if ArgConfig.is_dev():

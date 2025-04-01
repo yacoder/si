@@ -29,11 +29,14 @@ function ComponentHost({ startGame, newGameSettings }) {
     const [name, setName] = useState(t("defaultGameName")); // Name input value (default: AAA)
     const [hostData, setHostData] = useState(null); // Stores host data from the WebSocket
     const [gameStatus, setGameStatus] = useState(null); // Stores game status updates from the WebSocket
+
+    const [lag, setLag] = useState(0);
     const [reconnectGameToken, setReconnectGameToken] = useState(null); // Stores game ID for reconnection
     const [gameSettings, setGameSettings] = useState(newGameSettings); // Stores game settings
 
     const messanger = useRef(null);
     const currentGameID = useRef(null); // Ref to store the current game ID
+
 
 
     const handleLanguageChange = (lang) => {

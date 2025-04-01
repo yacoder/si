@@ -202,3 +202,55 @@ button {
 button:hover {
     background-color: #218838;
 }
+
+
+.top-bar {
+    position: fixed;
+    top: 0;
+    right: 0;
+    width: 100%;
+    height: 50px;
+    background-color: #222;
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end; /* Align content to the right */
+    padding: 0 20px;
+    font-size: 18px;
+    font-weight: bold;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+    z-index: 1000;
+    gap: 20px; /* Space between elements */
+    flex-wrap: nowrap; /* Prevent wrapping */
+    white-space: nowrap; /* Prevent wrapping */
+}
+
+.leave-button {
+    background-color: #ffdddd; /* Бледно-красный */
+    color: #aa0000; /* Темно-красный текст */
+    border: 1px solid #ffaaaa; /* Светло-красная рамка */
+    padding: 5px 10px;
+    font-size: 14px;
+    cursor: pointer;
+    border-radius: 5px;
+    white-space: nowrap;
+    width: auto;
+    min-width: fit-content;
+    transition: background-color 0.2s, color 0.2s;
+}
+
+.leave-button:hover {
+    background-color: #ffbbbb; /* Чуть насыщеннее при наведении */
+    color: #880000;
+}
+
+
+/* Lag Info Styling */
+.top-bar span {
+    font-size: 12px; /* Smaller font size for lag info */
+}
+
+/* Game Token Styling */
+.top-bar span:last-child {
+    font-size: 14px; /* Same size for the token */
+}
