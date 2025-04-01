@@ -27,7 +27,7 @@ class HostDecision(Enum):
 class AGame:
     # abstract class to represent games (SI, Brain, Erudit Quartet, etc.)
 
-    def __init__(self, server_manager):
+    def __init__(self, server_manager, game_save_handler):
         self.game_id = generate_id()
         self.token = generate_token()
         self.host: Optional[Player] = None
@@ -35,6 +35,7 @@ class AGame:
         self.server_manager = server_manager
         self.game_state = GameState.running.name
         self.finalized = False  # if game is finalized, no new entries are allowed
+        self.game_save_handler = game_save_handler
 
     @abstractmethod
     def check_signals(self):
@@ -113,6 +114,20 @@ class AGame:
         status = self.generate_game_status()
         self.broadcast_event(status)
 
+        game_data = {
+            "name": self.host.name,
+            "status":self.game_state,
+            "token": self.host.game_id,
+            "data":  status,
+        }
+        self.game_save_handler(
+            game_id=self.game_id,
+            user_id=self.host.player_id,
+            tournament_id="", #todo: pick it up from host
+            game_data=game_data,
+            
+        )
+
     def register_player(self, player: Player):
         if not self.finalized:
             player_id = player.player_id
@@ -140,8 +155,8 @@ class SIGame(AGame):
     DEFAULT_TIMER_COUNTDOWN = 6  # seconds
     DEFAULT_NOMINALS = [10, 20, 30,40, 50]
 
-    def __init__(self, server_manager, number_of_rounds=DEFAULT_NUMBER_OF_ROUNDS):
-        super().__init__(server_manager)
+    def __init__(self, server_manager, game_save_handler, number_of_rounds=DEFAULT_NUMBER_OF_ROUNDS):
+        super().__init__(server_manager, game_save_handler)
         self.nominals: List[int] = SIGame.DEFAULT_NOMINALS
         self.nominal_index: int = 0
         self.question_number = 0
@@ -184,6 +199,7 @@ class SIGame(AGame):
         for p in players:
             players_stat.append(dict(name=p.name, player_id=p.player_id, score=p.score))
         status['players'] = players_stat
+        status['number_of_rounds'] = self.number_of_rounds
         status['nominal'] = self.current_nominal
         status['game_state'] = self.game_state
         status['question_state'] = self.question_state.name

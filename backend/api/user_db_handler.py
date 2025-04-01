@@ -5,8 +5,9 @@ from backend.api.generic_validator import validate_record_for_mandatory_fields
 
 
 class UserDataProvider:    
-    def __init__(self, data_provider:GenericDataProvider):
+    def __init__(self, data_provider:GenericDataProvider, keep_transient_users:bool = True):
         self.data_provider = data_provider
+        self.keep_transient_users = keep_transient_users
 
 
     def init_user(self, user_token:str, user_data:dict):
@@ -17,7 +18,8 @@ class UserDataProvider:
         if existing_user:
             return existing_user
         required_fields = ["name"]
-        if user_data.get("simple_game_start") is not True:
+        transient_user = user_data.get("simple_game_start", False)
+        if transient_user is not True:
             if not user_data or not user_data.get("email"):
                 raise ValueError("User data is required")
             existing_user = self.data_provider.lookup_one_by_field("users", "email", user_data["email"])
@@ -31,11 +33,12 @@ class UserDataProvider:
         # Create a new user if it doesn't exist
         record = {
             "token": user_token,
-            "email": user_data["email"],
+            "email": user_data.get("email", ""),
             "name": user_data["name"],
             "ratingid": user_data.get("ratingid", 0),
         }
-        record["id"] = self.data_provider.upsert_one("users", None, record)
+        record["id"] = self.data_provider.upsert_one("users", None, record,
+                                                     False if self.keep_transient_users else transient_user == True)
         return record
     
             

@@ -2,20 +2,30 @@ import os
 import uuid
 
 import json
-# import mysql.connector
+import pymysql
 
 
 class GenericDataProvider:
     def __init__(self):
         db_config = os.getenv("SI_DB_CONFIG")
+        self.transient = {}
+
         if db_config is not None and db_config.startswith("mysql"):
-            db_config_property = db_config.split(",")
-            self.connection = mysql.connector.connect(
-                    host= db_config_property[0],
-                    user= db_config_property[1],
-                    password= db_config_property[2],
-                    database= db_config_property[3]
-             )
+            # MySQL connection string format: mysql://user:password@host/database
+
+            _, db_config = db_config.split("://")
+            user, password_host = db_config.split(":")
+            password, host_database = password_host.split("@")
+            host, database = host_database.split("/")
+         
+
+            self.connection = pymysql.connect(
+                host=host,
+                user=user,
+                password=password,
+                database=database,
+                cursorclass=pymysql.cursors.DictCursor  # Ensures results are returned as dictionaries
+            )
             self.lookup_one_by_id = self.lookup_one_by_id_sql
             self.lookup_one_by_field = self.lookup_one_by_field_sql
             self.lookup_many_by_field = self.lookup_many_by_field_sql
@@ -26,79 +36,63 @@ class GenericDataProvider:
             self.use_predefined_json = False  # Flag to indicate if predefined JSON data should be used
 
             env_use_predefined_json = os.getenv("SI_SAVE_JSON")
-            if env_use_predefined_json is not None and env_use_predefined_json.lower() == "true":
+            if env_use_predefined_json is None or env_use_predefined_json.lower() == "true":
                 self.use_predefined_json = True
                 # Load predefined JSON data from a file if the file exists
                 if os.path.exists("data.json"):
                     with open("data.json", "r") as f:
                         self.data = json.load(f)
-    
-
 
             self.lookup_one_by_id = self.lookup_one_by_id_json
             self.lookup_one_by_field = self.lookup_one_by_field_json
             self.lookup_many_by_field = self.lookup_many_by_field_json
             self.upsert_one = self.upsert_one_json
-             
-             
-    
+
+
+
+
+
     def lookup_one_by_id_sql(self, entity: str, id: str):
         """
         Fetch a single record from the specified entity (table) where the ID matches the given value.
         Returns the record as a dictionary of key-value pairs.
         """
         try:
-            # Ensure the connection is established
+            transient_result = self.storage_lookup_one_by_id(self.transient, entity, id)
+            if transient_result is not None:
+                return transient_result
+            
             if not hasattr(self, 'connection') or self.connection is None:
                 raise Exception("Database connection is not initialized.")
 
-            # Create a cursor
-            cursor = self.connection.cursor(dictionary=True)
-
-            # Prepare and execute the query
-            query = f"SELECT * FROM {entity} WHERE id = %s"
-            cursor.execute(query, (id,))
-
-            # Fetch the result
-            result = cursor.fetchone()
-
-            # Close the cursor
-            cursor.close()
-
-            return result  # Returns None if no record is found
-        except mysql.connector.Error as err:
+            with self.connection.cursor() as cursor:
+                query = f"SELECT * FROM {entity} WHERE id = %s"
+                cursor.execute(query, (id,))
+                result = cursor.fetchone()
+            return result
+        except pymysql.MySQLError as err:
             print(f"Error: {err}")
             return None
 
-
-
-        
-
-    def lookup_one_by_field_sql(self, entity:str, field:str, value:str):
+    def lookup_one_by_field_sql(self, entity: str, field: str, value: str):
         """
         Fetch a single record from the specified entity (table) where the field matches the given value.
         Returns the record as a dictionary of key-value pairs.
         """
         try:
-            # Ensure the connection is established
+            transient_result = self.storage_lookup_one_by_field(self.transient, entity, field, value)
+            if transient_result is not None:
+                return transient_result
+            
             if not hasattr(self, 'connection') or self.connection is None:
                 raise Exception("Database connection is not initialized.")
 
-            # Create a cursor
-            cursor = self.connection.cursor(dictionary=True)
-
-            # Prepare and execute the query
-            query = f"SELECT * FROM {entity} WHERE {field} = %s"
-            cursor.execute(query, (value,))
-
-            # Fetch the result
-            result = cursor.fetchone()
-
-            # Close the cursor
-            cursor.close()
-
-            return result  # Returns None if no record is found
-        except mysql.connector.Error as err:
+            with self.connection.cursor() as cursor:
+                query = f"SELECT * FROM {entity} WHERE {field} = %s"
+                cursor.execute(query, (value,))
+                result = cursor.fetchone()
+            return result
+        except pymysql.MySQLError as err:
             print(f"Error: {err}")
             return None
 
@@ -108,29 +102,28 @@ class GenericDataProvider:
         Returns the records as a list of dictionaries.
         """
         try:
-            # Ensure the connection is established
+           
+
             if not hasattr(self, 'connection') or self.connection is None:
                 raise Exception("Database connection is not initialized.")
+            
+            
 
-            # Create a cursor
-            cursor = self.connection.cursor(dictionary=True)
+            with self.connection.cursor() as cursor:
+                query = f"SELECT * FROM {entity} WHERE {field} = %s"
+                cursor.execute(query, (value,))
+                results = cursor.fetchall()
 
-            # Prepare and execute the query
-            query = f"SELECT * FROM {entity} WHERE {field} = %s"
-            cursor.execute(query, (value,))
-
-            # Fetch all results
-            results = cursor.fetchall()
-
-            # Close the cursor
-            cursor.close()
-
-            return results  # Returns an empty list if no records are found
-        except mysql.connector.Error as err:
+            transient_result = self.storage_lookup_many_by_field(self.transient, entity, field, value)
+            if transient_result is not None:
+                results.extend(transient_result)
+            
+            return results
+        except pymysql.MySQLError as err:
             print(f"Error: {err}")
             return []
 
-    def upsert_one_sql(self, entity: str, id: str, data: dict):
+    def upsert_one_sql(self, entity: str, id: str, data: dict, use_transient: bool = False):
         """
         Insert or update a record in the specified entity (table) based on the fields in the data dictionary.
         If a record with the given ID exists, it updates the record; otherwise, it inserts a new record.
@@ -138,85 +131,74 @@ class GenericDataProvider:
         Returns the ID of the upserted record.
         """
         try:
-            # Ensure the connection is established
+
+            if use_transient:
+                # Use the transient storage for upsert
+                return self.storage_upsert_one(self.transient, entity, id, data)
+            
             if not hasattr(self, 'connection') or self.connection is None:
                 raise Exception("Database connection is not initialized.")
 
-            # Generate a unique ID if the provided ID is None or empty
             if not id:
                 id = str(uuid.uuid4())
 
-            # Create a cursor
-            cursor = self.connection.cursor()
+            with self.connection.cursor() as cursor:
+                columns = ", ".join(data.keys())
+                placeholders = ", ".join(["%s"] * len(data))
+                update_clause = ", ".join([f"{key} = %s" for key in data.keys()])
 
-            # Prepare column names and values for the query
-            columns = ", ".join(data.keys())
-            placeholders = ", ".join(["%s"] * len(data))
-            update_clause = ", ".join([f"{key} = %s" for key in data.keys()])
-
-            # Prepare the UPSERT query
-            query = f"""
-                INSERT INTO {entity} (id, {columns})
-                VALUES (%s, {placeholders})
-                ON DUPLICATE KEY UPDATE {update_clause}
-            """
-
-            # Combine values for INSERT and UPDATE
-            values = (id, *data.values(), *data.values())
-
-            # Execute the query
-            cursor.execute(query, values)
-
-            # Commit the transaction
-            self.connection.commit()
-
-            # Close the cursor
-            cursor.close()
-
-            return id  # Return the ID of the upserted record
-        except mysql.connector.Error as err:
+                query = f"""
+                    INSERT INTO {entity} (id, {columns})
+                    VALUES (%s, {placeholders})
+                    ON DUPLICATE KEY UPDATE {update_clause}
+                """
+                values = (id, *data.values(), *data.values())
+                cursor.execute(query, values)
+                self.connection.commit()
+            return id
+        except pymysql.MySQLError as err:
             print(f"Error: {err}")
             return None
+        
 
-
-    def lookup_one_by_id_json(self, entity: str, id: str):
+    def storage_lookup_one_by_id(self, storage:dict, entity: str, id: str):
         """
         Fetch a single record from the in-memory JSON data where the ID matches the given value.
         Returns the record as a dictionary of key-value pairs.
         """
-        if entity not in self.data:
+        if entity not in storage:
             return None
-        return self.data[entity].get(id)
-
-    def lookup_one_by_field_json(self, entity: str, field: str, value: str):
+        return storage[entity].get(id, None)
+    
+    def storage_lookup_one_by_field(self, storage:dict, entity: str, field: str, value: str):
         """
         Fetch a single record from the in-memory JSON data where the field matches the given value.
         Returns the record as a dictionary of key-value pairs.
         """
-        if entity not in self.data:
+        if entity not in storage:
             return None
-        for record in self.data[entity].values():
+        for record in storage[entity].values():
             if record.get(field) == value:
                 return record
         return None
 
-    def lookup_many_by_field_json(self, entity: str, field: str, value: str):
+    def storage_lookup_many_by_field(self, storage:dict, entity: str, field: str, value: str):
         """
         Fetch multiple records from the in-memory JSON data where the field matches the given value.
         Returns the records as a list of dictionaries.
         """
-        if entity not in self.data:
+        if entity not in storage:
             return []
-        return [record for record in self.data[entity].values() if record.get(field) == value]
+        return [record for record in storage[entity].values() if record.get(field) == value]
 
-    def upsert_one_json(self, entity: str, id: str, data: dict):
+    def storage_upsert_one(self, storage:dict, entity: str, id: str, data: dict):
         """
         Insert or update a record in the in-memory JSON data based on the fields in the data dictionary.
         If the ID is None or an empty string, a new unique ID is generated.
         Returns the ID of the upserted record.
         """
-        if entity not in self.data:
-            self.data[entity] = {}
+        if entity not in storage:
+            storage[entity] = {}
 
         # Generate a unique ID if the provided ID is None or empty
         if not id:
@@ -225,7 +207,54 @@ class GenericDataProvider:
         data["id"] = id
 
         # Insert or update the record
-        self.data[entity][id] = data
+        storage[entity][id] = data
+
+        return id
+
+    def lookup_one_by_id_json(self, entity: str, id: str):
+        """
+        Fetch a single record from the in-memory JSON data where the ID matches the given value.
+        Returns the record as a dictionary of key-value pairs.
+        """
+        transient_result = self.storage_lookup_one_by_id(self.transient, entity, id)
+        if transient_result is not None:
+            return transient_result
+        return self.storage_lookup_one_by_id(self.data, entity, id)
+
+
+    def lookup_one_by_field_json(self, entity: str, field: str, value: str):
+        """
+        Fetch a single record from the in-memory JSON data where the field matches the given value.
+        Returns the record as a dictionary of key-value pairs.
+        """
+        transient_result = self.storage_lookup_one_by_field(self.transient,  entity, field, value)
+        if transient_result is not None:
+            return transient_result
+        return self.storage_lookup_one_by_field(self.data, entity, field, value)
+
+    def lookup_many_by_field_json(self, entity: str, field: str, value: str):
+        """
+        Fetch multiple records from the in-memory JSON data where the field matches the given value.
+        Returns the records as a list of dictionaries.
+        """
+        transient_result = self.storage_lookup_many_by_field(self.transient, field, value)
+        data_result = self.storage_lookup_many_by_field(self.data, entity, field, value)
+        if transient_result is not None:
+            data_result.extend(transient_result)
+        return data_result
+
+    def upsert_one_json(self, entity: str, id: str, data: dict, use_transient: bool = False):
+        """
+        Insert or update a record in the in-memory JSON data based on the fields in the data dictionary.
+        If the ID is None or an empty string, a new unique ID is generated.
+        Returns the ID of the upserted record.
+        """
+        if use_transient:
+            # Use the transient storage for upsert
+            return self.storage_upsert_one(self.transient, entity, id, data)
+            
+        
+        id = self.storage_upsert_one(self.data, entity, id, data)
 
         if self.use_predefined_json:
             # Save the updated data to the file
