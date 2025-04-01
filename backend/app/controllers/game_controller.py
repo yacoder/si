@@ -4,16 +4,12 @@ import logging
 from flask import request
 from simple_websocket import Server
 
-from backend.api.generic_data_provider import get_data_api
 
-from backend.api.user_db_handler import UserDataProvider
-from backend.api.game_db_handler import GameDataProvider
 from backend.app.managers.entity import Player, Signal
 from backend.app.managers.server import SIServerManager
 from backend.app.util.util import setup_logger, to_dict, now, DEFAULT_NUMBER_OF_ROUNDS, ArgConfig
 
-user_data_provider = UserDataProvider(get_data_api())
-game_data_provider = GameDataProvider(get_data_api())
+
 
 setup_logger()
 

@@ -9,25 +9,21 @@ from flask_sock import Sock
 from backend.api.generic_data_provider import get_data_api
 
 from backend.api.user_db_handler import UserDataProvider
+from backend.api.game_db_handler import GameDataProvider
 from backend.app.controllers.game_controller import test_socket_user, websocket_connection, get_game_status
 from backend.app.managers.server import SIServerManager, logger
 from backend.app.util.util import setup_logger, ArgConfig
 
 user_data_provider = UserDataProvider(get_data_api())
-# game_data_provider = GameDataProvider(get_data_api())
+game_data_provider = GameDataProvider(get_data_api())
 
 setup_logger()
-server_manager = SIServerManager()
+server_manager = SIServerManager(game_save_handler=game_data_provider.set_game_data)
 ArgConfig.load_args()
 
 app = Flask(__name__, static_folder='../../frontend/build', static_url_path='/')
 sock = Sock(app)
 CORS(app)
-
-
-
-
-
 
 
 @app.route('/auth', methods=['POST'])

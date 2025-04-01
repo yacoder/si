@@ -5,6 +5,8 @@ from typing import Dict
 
 from simple_websocket import Server
 
+
+
 from backend.app.managers.entity import Player
 from backend.app.managers.game import AGame, SIGame
 from backend.app.managers.ntp_manager import NtpServer
@@ -16,12 +18,13 @@ logger = logging.getLogger(__name__)
 class AServerManager:
     # manager responsible for handling all games (if game is active - from memory, if persisted but not active - from storage)
 
-    def __init__(self):
+    def __init__(self, game_save_handler):
         self.games: Dict[str, AGame] = dict()
         self.player_id_to_game: Dict[str, AGame] = dict()
         self.player_id_to_socket: Dict[str, Server] = dict()
         self.ntp_manager: NtpServer = NtpServer(self)
         self.ntp_manager.monitor()
+        self.game_save_handler = game_save_handler
 
     def process_offset_check(self, data):
         self.ntp_manager.process_response(data)
@@ -90,8 +93,8 @@ class AServerManager:
 
 class SIServerManager(AServerManager):
 
-    def __init__(self):
-        super().__init__()
+    def __init__(self, game_save_handler):
+        super().__init__(game_save_handler)
         self.interval_seconds = 1
         self.check_signals(interval=self.interval_seconds)
         self.game_token_to_id: Dict[str, str] = dict()
@@ -107,9 +110,10 @@ class SIServerManager(AServerManager):
             # TODO implement fetching persisted game
             pass
         return game
-
+    
+   
     def create_game(self, ws:Server, host_name=None, host_id=None, number_of_rounds=DEFAULT_NUMBER_OF_ROUNDS) -> AGame:
-        game = SIGame(self)
+        game = SIGame(self, game_save_handler=self.game_save_handler)
         self.games[game.game_id] = game
         self.game_token_to_id[game.token] = game.game_id
         host_name = host_name or "Host"

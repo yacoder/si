@@ -33,7 +33,7 @@ class GameDataProvider:
         if tournament_id:
             existing_tournament = self.data_provider.lookup_one_by_id("tournaments", tournament_id)
             if existing_tournament:
-                for key in ["type", "name", "status", "num_parts"]:
+                for key in ["type", "name", "status", "num_games"]:
                     if key not in tournament_data:
                         tournament_data[key] = existing_tournament[key]
         
@@ -46,121 +46,49 @@ class GameDataProvider:
             "type": tournament_data["type"],
             "name": tournament_data.get("name", ""),
             "status": tournament_data.get("status", "CREATED"),
-            "num_parts": tournament_data.get("num_parts", 1),
+            "num_games": tournament_data.get("num_games", 1),
         }
         tournament_id = self.data_provider.upsert_one("tournaments", tournament_id, record)
         updated_tournament = self.data_provider.lookup_one_by_id("tournaments", tournament_id)
         return updated_tournament
     
-    def set_game_data(self, game_id:str, tournament_id:str, game_data:dict):
+    def set_game_data(self, user_id:str, game_id:str, tournament_id:str, game_data:dict, transient:bool=False):
         """
         Set the game data for the given game ID.
         Returns the ID of the upserted game.
         """
         if not game_data:
             raise ValueError("Game data is required")
-        if not tournament_id:
-            raise ValueError("Game data is missing mandatory fields")
+        # if not tournament_id:
+        #    raise ValueError("Game data is missing mandatory fields")
         
         if game_id:
             existing_game = self.data_provider.lookup_one_by_id("games", game_id)
             if existing_game:
-                for key in ["tournament_id", "name", "status", "part_number", "num_rounds", "current_round", "game_questions", "game_answers"]:
+                for key in ["name", "status", "token", "data"]:
                     if key not in game_data:
                         game_data[key] = existing_game[key]
 
+        data = game_data.get("data", {})
+        if isinstance(data, dict):
+            data = json.dumps(data)
+        elif not isinstance(data, str):
+            raise ValueError("Game data must be a string or a dictionary")
+        
         record = {
+            "host_user_id": user_id,
             "tournament_id": tournament_id,
             "name": game_data.get("name", ""),
-            "status": game_data.get("status", "CREATED"),
-            "part_number": game_data.get("part_number", 0),
-            "token": game_data.get("token", str(uuid.uuid4())),
-            "num_rounds": game_data.get("num_rounds", 0),
-            "current_round": game_data.get("current_round", 0),
-            "game_questions": game_data.get("game_questions", "{}"),
-            "game_answers": game_data.get("game_answers", "{}"),
+            "status": game_data.get("status", ""),
+            "token": game_data.get("token", ""),
+            "data": data,
+
         }
-        game_id = self.data_provider.upsert_one("games", game_id, record)
+        game_id = self.data_provider.upsert_one("games", game_id, record, use_transient=transient)
         updated_game = self.data_provider.lookup_one_by_id("games", game_id)
         return updated_game
     
 
-    def add_player_to_game(self, game_id:str, player_data:dict):
-        if not player_data:
-            raise ValueError("Player data is required")
-        player_name = player_data.get("name")
-        all_players = self.data_provider.lookup_many_by_field("players", "game_id", game_id)
-        # if player with such name already exists in the game, return the player
-        for player in all_players:
-            if player["name"] == player_name:
-                return player
-        # if player with such name does not exist, create a new player
-        record = {
-            "game_id": game_id,
-            "name": player_data["name"],
-            "player_user_id": player_data.get("player_user_id", ""),
-            "score": player_data.get("score", 0),
-            "tournament_player_id": player_data.get("tournament_player_id", "")
-        }
-        record["id"] = self.data_provider.upsert_one("players", None, record)  
-        return record        
-        
-    
-    def set_player_data(self, player_id:str, player_data:dict):
-        """
-        Set the player data for the given player ID.
-        Updates player score only, requires the ID of the upserted player.
-        """
-        if not player_data:
-            raise ValueError("Player data is required")
-        
-        if player_id:
-            player = self.data_provider.lookup_one_by_id("players", player_id)
-            if not player:
-                raise ValueError("Player data is missing mandatory fields")
-            player['score'] = player_data.get("score", 0)
-            updated_player = self.data_provider.lookup_one_by_id("players", player_id)
-            return updated_player
-
-    
-    def generate_questions_based_on_tournament_type(self, tournament_type:str, num_rounds:int):
-        """
-        Generate questions based on the tournament type and number of rounds.
-        Returns a list of questions.
-        """
-        if num_rounds <= 0:
-            return "{}"
-        questions = []
-        if tournament_type == "si":
-            for i in range(num_rounds):
-                for j in range(4):
-                    questions.append({
-                        "id": str(uuid.uuid4()),
-                        "round_number": i + 1,
-                        "question_number": j + 1,
-                        "value": 10 * (i + 1),
-                    })
-        # convert questions to JSON string 
-        return json.dumps(questions)
-            
-    
-    def create_tournament_and_game(self, user_id:str, tournament_data:dict):
-        tournament = self.set_tournament_data(None, user_id, tournament_data)
-        for i in range(tournament["num_parts"]):
-            rounds = tournament_data.get("num_rounds", 0)
-            default_questions = self.generate_questions_based_on_tournament_type(tournament["type"], rounds)
-            game_data = {
-                "name": tournament["name"],
-                "status": "GAME_CREATED",
-                "part_number": i + 1,
-                "num_rounds": rounds,
-                "current_round": 0,
-                "game_questions": tournament_data.get("game_questions", default_questions),
-                "game_answers": tournament_data.get("game_answers", "{}"),
-            }
-            self.set_game_data(None, tournament["id"], game_data)
-        return self.get_tournament_data(tournament["id"])
-    
 
     def get_game_data(self, game_id:str):
         """
@@ -173,11 +101,9 @@ class GameDataProvider:
         if not game:
             return {}
         tournament = self.data_provider.lookup_one_by_id("tournaments", game["tournament_id"])
-        players = self.data_provider.lookup_many_by_field("players", "game_id", game_id)
         return {
             "tournament": tournament,
             "game": game,
-            "players": players,
         }
     
     def get_tournament_data(self, tournament_id:str):
@@ -191,16 +117,12 @@ class GameDataProvider:
         if not tournament:
             return {}
         games = self.data_provider.lookup_many_by_field("games", "tournament_id", tournament_id)
-        players = []
-        
-        for game in games:
-            players_in_game = self.data_provider.lookup_many_by_field("players", "game_id", game["id"])
-            players.extend(players_in_game)
+
 
         return {
             "tournament": tournament,
             "games": games,
-            "players": players,
+            
         }
     
      
