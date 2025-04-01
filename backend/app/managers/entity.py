@@ -4,8 +4,8 @@ from backend.app.util.util import generate_id
 # this class keeps definition of all small bean-like classes without complex logic
 
 class Player:
-    def __init__(self, name: str, game_id: str, existing_id:str = None ) :
-        self.score:int = 0
+    def __init__(self, name: str, game_id: str, existing_id:str = None , restore_score:int = 0): 
+        self.score:int = restore_score
         self.player_id = generate_id() if existing_id is None else existing_id
         self.name = name
         self.game_id=game_id

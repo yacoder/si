@@ -38,6 +38,16 @@ class AGame:
         self.player_ids_list = []
         self.game_save_handler = game_save_handler
 
+    def restore_from_data(self, game_data: dict):
+        self.game_id = game_data["game_id"]
+        self.token = game_data["token"]
+        self.game_state = game_data["status"]
+        raw_game_data = game_data["data"]["status"]
+        self.finalized = raw_game_data.get("finalized", 0) == 1
+        self.host = Player(game_id = self.game_id,existing_id=game_data["host_user_id"], name=game_data.get("host_name", ""))
+        self.players = {p['player_id']: Player(game_id = self.game_id,existing_id=p['player_id'], name=p['name'], restore_score=p.get('score',0)) for p in raw_game_data['players']}
+        self.player_ids_list = list(self.players.keys())
+
 
     @abstractmethod
     def check_signals(self):
@@ -120,7 +130,7 @@ class AGame:
         game_data = {
             "name": self.host.name,
             "status":self.game_state,
-            "token": self.host.game_id,
+            "token": self.token,
             "data":  status,
         }
         self.game_save_handler(
@@ -193,6 +203,37 @@ class SIGame(AGame):
 
         # keeps question stats: for each answered player it shows whether answer was correct (True) or not (False)
 
+    def restore_from_data(self, game_data: dict):
+        super().restore_from_data(game_data)
+        
+        raw_game_data = game_data["data"]["status"]
+
+        self.number_of_rounds = raw_game_data["number_of_rounds"]
+        self.current_nominal = raw_game_data["nominal"]
+        self.current_round = raw_game_data["round_number"]
+        self.game_stats = raw_game_data["game_stats"]
+        self.round_name = raw_game_data["round_name"]
+
+        number_of_questions_in_round = len(self.nominals)
+
+        # reconstruct round stats values based on game data
+        for r in self.game_stats:
+            if r['player_stats'] is not None:
+                qn = r['question_number']
+                nominal = r['nominal']
+                qi = self.nominals.index(nominal) 
+                qr = qn // number_of_questions_in_round + 1
+                for (p,v) in r['player_stats'].items():
+                    self.round_stats[qr][qi][p] = 1 if v > 0 else -1
+
+        self.current_round_stats = self.round_stats[self.current_round]       
+
+
+        self.nominal_index  = self.nominals.index(self.current_nominal)
+        self.number_of_question_in_round = self.nominal_index - 1
+        self.question_number = (self.current_round - 1) * number_of_questions_in_round + self.number_of_question_in_round
+        self.question_state = QuestionState[raw_game_data['question_state']]
+
     def reset(self, is_after_incorrect_answer: bool = False):
         self.signals = dict()
         self.is_host_notified_on_first_signal = False
@@ -223,7 +264,7 @@ class SIGame(AGame):
         status["game_stats"] = self.game_stats
         status['game_id'] = self.game_id
         status['round_number'] = self.current_round
-        status['round_name'] = "Париж и пригороды"
+        status['round_name'] = "Тема #" + str(self.current_round)
         status['current_round_stats'] = self._generate_current_round_array()
         result = dict(status=status)
         result = to_dict(result)

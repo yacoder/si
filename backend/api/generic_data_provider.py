@@ -4,6 +4,8 @@ import uuid
 import json
 import pymysql
 
+import threading
+
 
 from backend.app.util.util import ArgConfig
 
@@ -14,6 +16,9 @@ class GenericDataProvider:
     def __init__(self):
         db_config = os.getenv("SI_DB_CONFIG")
         self.transient = {}
+        self.lock = threading.Lock()
+
+        
 
         if db_config is not None and db_config.startswith("mysql"):
             # MySQL connection string format: mysql://user:password@host/database
@@ -29,6 +34,8 @@ class GenericDataProvider:
                 user=user,
                 password=password,
                 database=database,
+                charset="utf8mb4",
+                autocommit = True,
                 cursorclass=pymysql.cursors.DictCursor  # Ensures results are returned as dictionaries
             )
             self.lookup_one_by_id = self.lookup_one_by_id_sql
@@ -67,71 +74,77 @@ class GenericDataProvider:
         Fetch a single record from the specified entity (table) where the ID matches the given value.
         Returns the record as a dictionary of key-value pairs.
         """
-        try:
-            transient_result = self.storage_lookup_one_by_id(self.transient, entity, id)
-            if transient_result is not None:
-                return transient_result
-            
-            if not hasattr(self, 'connection') or self.connection is None:
-                raise Exception("Database connection is not initialized.")
+        with self.lock:
+            try:
+                transient_result = self.storage_lookup_one_by_id(self.transient, entity, id)
+                if transient_result is not None:
+                    return transient_result
+                
+                if not hasattr(self, 'connection') or self.connection is None:
+                    raise Exception("Database connection is not initialized.")
 
-            with self.connection.cursor() as cursor:
-                query = f"SELECT * FROM {entity} WHERE id = %s"
-                cursor.execute(query, (id,))
-                result = cursor.fetchone()
-            return result
-        except pymysql.MySQLError as err:
-            print(f"Error: {err}")
-            return None
+                with self.connection.cursor() as cursor:
+                    # self.connection.ping(reconnect=True)
+                    query = f"SELECT * FROM {entity} WHERE id = %s"
+                    cursor.execute(query, (id,))
+                    result = cursor.fetchone()
+                return result
+            except pymysql.MySQLError as err:
+                print(f"Error: {err}")
+                return None
 
     def lookup_one_by_field_sql(self, entity: str, field: str, value: str):
         """
         Fetch a single record from the specified entity (table) where the field matches the given value.
         Returns the record as a dictionary of key-value pairs.
         """
-        try:
-            transient_result = self.storage_lookup_one_by_field(self.transient, entity, field, value)
-            if transient_result is not None:
-                return transient_result
-            
-            if not hasattr(self, 'connection') or self.connection is None:
-                raise Exception("Database connection is not initialized.")
+        with self.lock:
+            try:
+                transient_result = self.storage_lookup_one_by_field(self.transient, entity, field, value)
+                if transient_result is not None:
+                    return transient_result
+                
+                if not hasattr(self, 'connection') or self.connection is None:
+                    raise Exception("Database connection is not initialized.")
 
-            with self.connection.cursor() as cursor:
-                query = f"SELECT * FROM {entity} WHERE {field} = %s"
-                cursor.execute(query, (value,))
-                result = cursor.fetchone()
-            return result
-        except pymysql.MySQLError as err:
-            print(f"Error: {err}")
-            return None
+                with self.connection.cursor() as cursor:
+                    # self.connection.ping(reconnect=True)
+                    query = f"SELECT * FROM {entity} WHERE {field} = %s"
+                    cursor.execute(query, (value,))
+                    result = cursor.fetchone()
+                return result
+            except pymysql.MySQLError as err:
+                print(f"Error: {err}")
+                return None
 
     def lookup_many_by_field_sql(self, entity: str, field: str, value: str):
         """
         Fetch multiple records from the specified entity (table) where the field matches the given value.
         Returns the records as a list of dictionaries.
         """
-        try:
-           
-
-            if not hasattr(self, 'connection') or self.connection is None:
-                raise Exception("Database connection is not initialized.")
-            
+        with self.lock:
+            try:
             
 
-            with self.connection.cursor() as cursor:
-                query = f"SELECT * FROM {entity} WHERE {field} = %s"
-                cursor.execute(query, (value,))
-                results = cursor.fetchall()
+                if not hasattr(self, 'connection') or self.connection is None:
+                    raise Exception("Database connection is not initialized.")
+                
+                
 
-            transient_result = self.storage_lookup_many_by_field(self.transient, entity, field, value)
-            if transient_result is not None:
-                results.extend(transient_result)
-            
-            return results
-        except pymysql.MySQLError as err:
-            print(f"Error: {err}")
-            return []
+                with self.connection.cursor() as cursor:
+                    # self.connection.ping(reconnect=True)
+                    query = f"SELECT * FROM {entity} WHERE {field} = %s"
+                    cursor.execute(query, (value,))
+                    results = cursor.fetchall()
+
+                transient_result = self.storage_lookup_many_by_field(self.transient, entity, field, value)
+                if transient_result is not None:
+                    results.extend(transient_result)
+                
+                return results
+            except pymysql.MySQLError as err:
+                print(f"Error: {err}")
+                return []
 
     def upsert_one_sql(self, entity: str, id: str, data: dict, use_transient: bool = False):
         """
@@ -140,35 +153,37 @@ class GenericDataProvider:
         If the ID is None or an empty string, a new unique ID is generated.
         Returns the ID of the upserted record.
         """
-        try:
+        with self.lock:
+            try:
 
-            if use_transient:
-                # Use the transient storage for upsert
-                return self.storage_upsert_one(self.transient, entity, id, data)
-            
-            if not hasattr(self, 'connection') or self.connection is None:
-                raise Exception("Database connection is not initialized.")
+                if use_transient:
+                    # Use the transient storage for upsert
+                    return self.storage_upsert_one(self.transient, entity, id, data)
+                
+                if not hasattr(self, 'connection') or self.connection is None:
+                    raise Exception("Database connection is not initialized.")
 
-            if not id:
-                id = str(uuid.uuid4())
+                if not id:
+                    id = str(uuid.uuid4())
 
-            with self.connection.cursor() as cursor:
-                columns = ", ".join(data.keys())
-                placeholders = ", ".join(["%s"] * len(data))
-                update_clause = ", ".join([f"{key} = %s" for key in data.keys()])
+                with self.connection.cursor() as cursor:
+                    # self.connection.ping(reconnect=True)
+                    columns = ", ".join(data.keys())
+                    placeholders = ", ".join(["%s"] * len(data))
+                    update_clause = ", ".join([f"{key} = %s" for key in data.keys()])
 
-                query = f"""
-                    INSERT INTO {entity} (id, {columns})
-                    VALUES (%s, {placeholders})
-                    ON DUPLICATE KEY UPDATE {update_clause}
-                """
-                values = (id, *data.values(), *data.values())
-                cursor.execute(query, values)
-                self.connection.commit()
-            return id
-        except pymysql.MySQLError as err:
-            print(f"Error: {err}")
-            return None
+                    query = f"""
+                        INSERT INTO {entity} (id, {columns})
+                        VALUES (%s, {placeholders})
+                        ON DUPLICATE KEY UPDATE {update_clause}
+                    """
+                    values = (id, *data.values(), *data.values())
+                    cursor.execute(query, values)
+                    self.connection.commit()
+                return id
+            except pymysql.MySQLError as err:
+                print(f"Error: {err}")
+                return None
         
 
     def storage_lookup_one_by_id(self, storage:dict, entity: str, id: str):

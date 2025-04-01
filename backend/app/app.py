@@ -18,7 +18,8 @@ user_data_provider = UserDataProvider(get_data_api())
 game_data_provider = GameDataProvider(get_data_api())
 
 setup_logger()
-server_manager = SIServerManager(game_save_handler=game_data_provider.set_game_data)
+server_manager = SIServerManager(game_save_handler=game_data_provider.set_game_data,
+                                 game_loader=game_data_provider.get_game_data)
 ArgConfig.load_args()
 
 app = Flask(__name__, static_folder='../../frontend/build', static_url_path='/')

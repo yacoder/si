@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import callAPI from './callAPI';
 import { handleLoop as handleHostLoop, generatePlayerSummary } from "./gameFlow";
+import RoundStatsTable from "./RoundStatsTable";
 
 const POSSIBLE_STATES = {
     AUTO_START: 'AUTO_START',
@@ -82,9 +83,11 @@ function ComponentHost({ startGame, autostartNumRounds }) {
     const reloadGameStatus = async () => {
         setLoading(true);
         try {
-            const data = await callAPI(`/api/host/game/${gameID}`);
-            if (data && data.status?.game_id) {
-                setGameStatus(data.status);
+            if (gameID) {
+                const data = await callAPI(`/api/host/game/${gameID}`);
+                if (data && data.status?.game_id) {
+                    setGameStatus(data.status);
+                }
             }
         } catch (error) {
             console.error('Error setting data:', error);
@@ -191,7 +194,8 @@ function ComponentHost({ startGame, autostartNumRounds }) {
                 </div>
             )}
 
-            {generatePlayerSummary(gameStatus?.players, null)}
+            {false && generatePlayerSummary(gameStatus?.players, null)}
+            {gameStatus?.current_round_stats && <RoundStatsTable data={gameStatus?.current_round_stats} />}
 
 
 
