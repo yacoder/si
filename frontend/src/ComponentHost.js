@@ -27,6 +27,8 @@ function ComponentHost({ startGame, autostartNumRounds }) {
     const [reconnectGameID, setReconnectGameID] = useState(null); // Stores game ID for reconnection
     const [gameID, setGameID] = useState(null); // Stores game ID for reconnection
     const [numRounds, setNumRounds] = useState(autostartNumRounds); // Number of rounds for the game
+    const [roundNames, setRoundNames] = useState(""); // Stores topics for the game
+    const [showRoundNameEdits, setShowRoundNameEdits] = useState(false); // Flag to show/hide round name edits
 
 
 
@@ -52,8 +54,11 @@ function ComponentHost({ startGame, autostartNumRounds }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
     const handleCreateGame = async () => {
         try {
-            const messanger_handler = handleHostLoop(name, setHostData, switchStatus, switchGameStatus, 'start', null, null,
-                { number_of_rounds: numRounds },
+            const data = await callAPI(`/api/host`);
+            const hostID = data.id;
+            console.log("Host ID:", hostID);
+            const messanger_handler = handleHostLoop(name, setHostData, switchStatus, switchGameStatus, 'start', hostID, null,
+                { number_of_rounds: numRounds, round_names: roundNames },
                 window.location.href
             );
             messanger.current = messanger_handler; // Save the messanger function to state
@@ -109,9 +114,17 @@ function ComponentHost({ startGame, autostartNumRounds }) {
 
     const handleEndGame = async () => {
         sendMessage({
-            action: "finalize",
+            action: "finish_game",
         });
         setGameState(POSSIBLE_STATES.ENDED);
+    }
+
+    const handleSetRoundNames = async () => {
+        sendMessage({
+            action: "set_round_names",
+            round_names: roundNames
+        });
+        setShowRoundNameEdits(false);
     }
 
     // call handleCreateGame when startGame is true
@@ -122,6 +135,13 @@ function ComponentHost({ startGame, autostartNumRounds }) {
             handleCreateGame();
         }
     }, [gameState, handleCreateGame]);
+
+
+    const logout = () => {
+        // Clear the token and redirect to login page
+        sessionStorage.removeItem('authToken');
+        window.location.reload();
+    }
 
     return (
         <div>
@@ -146,6 +166,7 @@ function ComponentHost({ startGame, autostartNumRounds }) {
                         onChange={(e) => setReconnectGameID(e.target.value)}
                     />
                     <button onClick={handleReconnectGame}>Reconnect to existing game</button>
+                    <button onClick={() => logout()}>Quit to login</button>
                 </div>
             )}
 
@@ -190,12 +211,33 @@ function ComponentHost({ startGame, autostartNumRounds }) {
 
 
 
-                    <button onClick={handleEndGame}>End Game</button>
                 </div>
             )}
 
             {false && generatePlayerSummary(gameStatus?.players, null)}
             {gameStatus?.current_round_stats && <RoundStatsTable data={gameStatus?.current_round_stats} />}
+
+            {gameState === POSSIBLE_STATES.STARTED && (
+                <div>
+                    {showRoundNameEdits && (
+                        <div>
+                            <h3>Темы</h3>
+                            <textarea
+                                placeholder="Round Names (one per line)"
+                                value={roundNames}
+                                onChange={(e) => setRoundNames(e.target.value)}
+                                rows={numRounds || 5}
+                                style={{ width: "100%" }} // Optional: Make it full width
+                            />
+                            <button onClick={handleSetRoundNames}>Задать темы</button>
+                        </div>
+                    )}
+                    {!showRoundNameEdits && (
+                        <button onClick={() => setShowRoundNameEdits(true)}>Задать темы</button>
+                    )}
+                    <button onClick={handleEndGame}>End Game</button>
+                </div>
+            )}
 
 
 

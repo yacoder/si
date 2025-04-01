@@ -76,7 +76,13 @@ def get_host_game_data(game_id):
     except ValueError as e:
         return {'error': str(e)}, 400  
     
-
+@app.route('/api/host', methods=['GET'])
+def get_host_data():
+    try:
+        host = get_authenticated_user(request)
+        return host
+    except ValueError as e:
+        return {'error': str(e)}, 400  
 
 
 @app.route('/', defaults={'path': ''})

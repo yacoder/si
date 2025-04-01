@@ -15,8 +15,8 @@ setup_logger()
 
 logger = logging.getLogger(__name__)
 
-def create_game(server_manager: SIServerManager, host_name, ws:Server, number_of_rounds=DEFAULT_NUMBER_OF_ROUNDS):
-    game = server_manager.create_game(ws, host_name=host_name, number_of_rounds=number_of_rounds)
+def create_game(server_manager: SIServerManager, host_name, host_id, ws:Server, number_of_rounds=DEFAULT_NUMBER_OF_ROUNDS, round_names_as_text=None):
+    game = server_manager.create_game(ws, host_name=host_name, host_id=host_id, number_of_rounds=number_of_rounds, round_names_as_text=round_names_as_text)
     return game
 
 def test_socket_user(server_manager: SIServerManager):
@@ -47,12 +47,14 @@ def websocket_connection(ws, server_manager: SIServerManager):
             if action == "start_game":
                 # { "action": "start_game", "host_name": "Masha", "number_of_rounds": 8 }
                 host_name = data.get("host_name")
+                host_id = data.get("host_id", None)
                 number_of_rounds = data.get("number_of_rounds")
+                round_names_as_text = data.get("round_names", None)
                 try:
                     number_of_rounds = int(number_of_rounds) if number_of_rounds is not None else DEFAULT_NUMBER_OF_ROUNDS
                 except ValueError:
                     number_of_rounds = DEFAULT_NUMBER_OF_ROUNDS
-                game = create_game(server_manager, host_name, ws, number_of_rounds=number_of_rounds)
+                game = create_game(server_manager, host_name, host_id, ws, number_of_rounds=number_of_rounds, round_names_as_text=round_names_as_text)
                 result = dict(id=game.game_id, token=game.token, host={"name": game.host.name, "id": game.host.player_id, "token": game.token})
             elif action == "host_reconnect":
                 # { "action": "host_reconnect",  "token": "ABCDEF" }
@@ -114,6 +116,13 @@ def websocket_connection(ws, server_manager: SIServerManager):
                 data['server_in_ts'] = now()
                 server_manager.process_offset_check(data)
                 result = None
+            elif action == "set_round_names":
+                game_id = data.get("game_id")
+                game = server_manager.get_game_by_id(game_id)
+                if game is not None:
+                    round_names_as_text = data.get("round_names", None)
+                    game.set_round_names(round_names_as_text)
+                    result = STATUS_OK
             else:
                 result = None
 
