@@ -26,6 +26,8 @@ function ComponentPlayer({ startGame }) {
     const [gameStatus, setGameStatus] = useState(null);
     const [gameName, setGameName] = useState("");
     const [currentNominal, setCurrentNominal] = useState(null);
+    const [clientServerLag, setClientServerLag ] = useState(0);
+    const [serverClientLag, setServerClientLag ] = useState(0);
 
     const [loading, setLoading] = useState(false);
 
@@ -118,6 +120,14 @@ function ComponentPlayer({ startGame }) {
 
 
     return (
+    <div>
+        <div className="top-bar">
+            <button onClick={logout} className="leave-button">Выйти из игры</button>
+            <span>⏳ Клиент → Сервер: {clientServerLag.toFixed(2)} ms</span>
+            <span>⏳ Сервер → Клиент: {serverClientLag.toFixed(2)} ms</span>
+            <span>🎮 Токен игры: {gameName}</span>
+        </div>
+
         <div>
             {false && (
                 <div>
@@ -135,9 +145,7 @@ function ComponentPlayer({ startGame }) {
 
             {gameState === POSSIBLE_STATES.STARTED && (
                 <div>
-                    <h1>{t("game")}: {gameName}</h1>
-                    <h2>{t("round")} {gameStatus?.round_number}: {gameStatus?.round_name} {t("question")}: {currentNominal}</h2>
-
+                    <h2>Тема: {gameStatus?.round_number}: {gameStatus?.round_name} Вопрос: {currentNominal}</h2>
                     {gameStatus?.question_state === "fake" && (
                         <div>
                             <p>Game Status: {JSON.stringify(gameStatus)}</p>
@@ -176,6 +184,7 @@ function ComponentPlayer({ startGame }) {
 
 
         </div>
+     </div>
     );
 }
 
