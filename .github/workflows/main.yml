@@ -1,6 +1,9 @@
 name: Build Server Distro
 
 on:
+  push:
+    branches:
+      - main
   workflow_dispatch:
     inputs:
       branch:
