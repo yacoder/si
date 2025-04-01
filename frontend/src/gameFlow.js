@@ -32,6 +32,29 @@ export const generatePlayerSummary = (players, player_id) => {
     )
 };
 
+export const performStatusUpdate = ({ status, setGameStatus, ignoreGameCheck, currentGameID, reloadGameStatus }) => {
+    if (status === "OK") {
+        reloadGameStatus?.();
+    } else {
+
+        let needStatusUpdate = false;
+        let proposedStatus = {};
+        if (status?.lag) {
+            proposedStatus.lag = status.lag;
+            needStatusUpdate = true;
+        }
+        if ((ignoreGameCheck && status?.game_id) || (status?.game_id && currentGameID?.current === status.game_id)) {
+            // only accept status from current game
+            // consider replacing with reloadGameStatus
+            proposedStatus = { ...proposedStatus, ...status };
+            needStatusUpdate = true;
+        }
+        if (needStatusUpdate) {
+            setGameStatus(proposedStatus);
+        }
+    }
+}
+
 
 
 export const handleLoop = (name, setHostData, setScreen, setGameStatus, screen,
@@ -128,13 +151,13 @@ export const handleLoop = (name, setHostData, setScreen, setGameStatus, screen,
                     }
                     if (data.action) {
 
-                        if(data.action === "offset_check") {
+                        if (data.action === "offset_check") {
                             console.log("checking offset for host", data.offset_check);
                             data['client_ts'] = Date.now();
                             socket.send(JSON.stringify(data));
                         }
                         else if (data.action === 'offset_check_result') {
-//                            setLag(data['lag']);
+                            setGameStatus({ lag: data['lag'] });
                         }
 
                     }

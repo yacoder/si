@@ -4,9 +4,10 @@ import { useTranslation } from "react-i18next";
 import "./i18n"; // Import i18n initialization
 
 import callAPI from './callAPI';
-import { handleLoop as handleHostLoop } from "./gameFlow";
+import { handleLoop as handleHostLoop, performStatusUpdate } from "./gameFlow";
 import RoundStatsTable from "./RoundStatsTable";
 import GameSettingsCollector from "./GameSettingsCollector";
+import GameStatsDisplay from "./GameStatsDisplay";
 
 
 const POSSIBLE_STATES = {
@@ -30,7 +31,7 @@ function ComponentHost({ startGame, newGameSettings }) {
     const [hostData, setHostData] = useState(null); // Stores host data from the WebSocket
     const [gameStatus, setGameStatus] = useState(null); // Stores game status updates from the WebSocket
 
-    const [lag, setLag] = useState(0);
+
     const [reconnectGameToken, setReconnectGameToken] = useState(null); // Stores game ID for reconnection
     const [gameSettings, setGameSettings] = useState(newGameSettings); // Stores game settings
 
@@ -66,16 +67,21 @@ function ComponentHost({ startGame, newGameSettings }) {
             setGameState(POSSIBLE_STATES.STARTED);
         }
     };
+    const safeSetGameStatus = (propsedNewStatus) => {
+        setGameStatus((prevStatus) => ({
+            ...prevStatus,
+            ...propsedNewStatus
+        }));
+    };
+
     const switchGameStatus = (status) => {
-        if (status === "OK") {
-            reloadGameStatus();
-        } else {
-            if (status?.game_id && currentGameID.current === status.game_id) {
-                // only accept status from current game
-                // can even be replaced with reloadGameStatus
-                setGameStatus(status);
-            }
-        }
+        performStatusUpdate({
+            status: status,
+            setGameStatus: safeSetGameStatus,
+            ignoreGameCheck: false,
+            currentGameID: currentGameID,
+            reloadGameStatus: reloadGameStatus
+        });
     };
 
     const handleSwitchHostData = (data) => {
@@ -176,6 +182,10 @@ function ComponentHost({ startGame, newGameSettings }) {
                     <button onClick={() => handleLanguageChange("ru")}>Русский</button>
                 </div>
             )}
+            <div className="top-bar">
+                <button onClick={logout} className="leave-button">{t("logout")}</button>
+                <GameStatsDisplay t={t} gameStats={gameStatus} />
+            </div>
 
             {(gameState === POSSIBLE_STATES.NOT_EXIST || gameState === POSSIBLE_STATES.ENDED) && (
                 <div>
@@ -204,7 +214,7 @@ function ComponentHost({ startGame, newGameSettings }) {
 
             {gameState === POSSIBLE_STATES.STARTED && (
                 <div>
-                    <p>{t("hostToken")}: {sessionStorage.getItem('authToken')}, {t("gameToken")}: {hostData?.token} {currentGameID.current}</p>
+                    <p>{t("hostToken")}: {sessionStorage.getItem('authToken')}, {t("gameToken")}: {hostData?.token}</p>
                     <h2>{t("round")} {gameStatus?.round_number}: {gameStatus?.round_name} </h2>
 
                     {gameStatus?.question_state === "running" && (

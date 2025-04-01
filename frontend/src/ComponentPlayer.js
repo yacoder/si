@@ -5,8 +5,9 @@ import callAPI from './callAPI';
 import { useTranslation } from "react-i18next";
 import "./i18n"; // Import i18n initialization
 
-import { handlePlayerLoop } from "./gameFlow";
+import { handlePlayerLoop, performStatusUpdate } from "./gameFlow";
 import RoundStatsTable from "./RoundStatsTable";
+import GameStatsDisplay from "./GameStatsDisplay";
 
 const POSSIBLE_STATES = {
     AUTO_JOIN: 'AUTO_JOIN',
@@ -17,16 +18,15 @@ const POSSIBLE_STATES = {
 
 }
 
-function ComponentPlayer({ startGame }) {
+function ComponentPlayer() {
     const { t, i18n } = useTranslation(); // Hook for translations
 
-    const [gameState, setGameState] = useState(startGame ? POSSIBLE_STATES.AUTO_JOIN : POSSIBLE_STATES.NOT_EXIST);
-    const [gameID, setGameID] = useState(null);
+    const [gameState, setGameState] = useState(POSSIBLE_STATES.AUTO_JOIN);
     const [savedPlayer, setSavedPlayer] = useState(null);
-    const [gameStatus, setGameStatus] = useState(null);
-    const [lag, setLag] = useState(0);
-    const [gameName, setGameName] = useState("");
-    const [currentNominal, setCurrentNominal] = useState(null);
+    const [gameStatus, setGameStatus] = useState({});
+
+    const currentGameID = useRef(null); // Ref to store the current game ID
+    const messanger = useRef(null);
 
     const [loading, setLoading] = useState(false);
 
@@ -34,53 +34,51 @@ function ComponentPlayer({ startGame }) {
         i18n.changeLanguage(lang); // Change language dynamically
     };
 
-    const loadData = useCallback(async () => {
-        try {
-            setLoading(true);
-            const data = await callAPI(`/api/player/game`);
-            if (data && data.status?.game_id) {
-                setGameID(data.status.game_id);
-                setGameName(data.status.game_token);
-                setCurrentNominal(data.status.nominal);
-                setSavedPlayer(data.player);
+    const safeSetGameStatus = (propsedNewStatus) => {
+        setGameStatus((prevStatus) => ({
+            ...prevStatus,
+            ...propsedNewStatus
+        }));
+    };
 
-                if (startGame) {
-                    console.log("Attempting to auto-join");
+    const handleSetGameStatus = (status) => {
+        setGameState(POSSIBLE_STATES.STARTED);
+        performStatusUpdate({
+            status: status,
+            setGameStatus: safeSetGameStatus,
+            ignoreGameCheck: true,
+            // reloadGameStatus: () => loadData(),
+        });
+    };
+
+
+    // call loadData when the component mounts
+    useEffect(() => {
+        async function fetchData() {
+            try {
+                setLoading(true);
+                console.log("Loading data...");
+                const data = await callAPI(`/api/player/game`);
+                if (data && data.status?.game_id) {
+                    currentGameID.current = data.status.game_id;
+                    setSavedPlayer(data.player);
                     setGameState(POSSIBLE_STATES.AUTO_JOIN);
                     messanger.current = handlePlayerLoop(data.player.name, data.status.game_id, handleSetGameStatus, data.player.player_id,
                         window.location.href
                     );
+
                 } else {
-                    setGameState(POSSIBLE_STATES.CREATED);
+                    setGameState(POSSIBLE_STATES.NOT_EXIST);
                 }
-            } else {
-                setGameState(POSSIBLE_STATES.NOT_EXIST);
-
+            } catch (error) {
+                console.error('Error fetching data:', error);
+            } finally {
+                setLoading(false);
             }
-        } catch (error) {
-            console.error('Error fetching data:', error);
-        } finally {
-            setLoading(false);
         }
-    }, [startGame]);
-
-    const messanger = useRef(null);
-
-
-
-    useEffect(() => {
-        const fetchInitialData = async () => loadData();
-        fetchInitialData();
-    }, [loadData]);
-
-    const handleSetGameStatus = (status) => {
-        setGameState(POSSIBLE_STATES.STARTED)
-        setGameStatus(status);
-        if (status?.nominal) {
-            setCurrentNominal(status.nominal);
-        }
-
-    }
+        fetchData();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 
 
 
@@ -93,18 +91,18 @@ function ComponentPlayer({ startGame }) {
         }
 
 
-        messanger.current = handlePlayerLoop(savedPlayer.name, gameID, handleSetGameStatus, savedPlayer.player_id, window.location.href);
+        messanger.current = handlePlayerLoop(savedPlayer.name, currentGameID.current, handleSetGameStatus, savedPlayer.player_id, window.location.href);
     }
 
 
     const sendMessage = useCallback((message) => {
         if (messanger.current) {
-            message.game_id = gameID;
+            message.game_id = currentGameID.current;
             messanger.current(message);
         } else {
             console.error('Messanger is not initialized yet.');
         }
-    }, [gameID, messanger]);
+    }, [currentGameID, messanger]);
 
 
 
@@ -119,13 +117,6 @@ function ComponentPlayer({ startGame }) {
 
 
     return (
-    <div>
-        <div className="top-bar">
-            <button onClick={logout} className="leave-button">Выйти из игры</button>
-            <span>⏳ Lag: {lag.toFixed(2)} ms</span>
-            <span>🎮 Токен игры: {gameName}</span>
-        </div>
-
         <div>
             {false && (
                 <div>
@@ -133,56 +124,55 @@ function ComponentPlayer({ startGame }) {
                     <button onClick={() => handleLanguageChange("ru")}>Русский</button>
                 </div>
             )}
-            {gameState === POSSIBLE_STATES.NOT_EXIST && <button onClick={() => logout()}>{t("somethingBroke")}</button>}
-            {gameState === POSSIBLE_STATES.CREATED && (
-                <div>
-                    <button onClick={handleJoinGame}>{t("reconnect")}</button>
-                    <button onClick={logout}>{t("logout")}</button>
-                </div>
-            )}
+            <div className="top-bar">
+                <button onClick={logout} className="leave-button">{t("logoutPlayer")}</button>
+                <GameStatsDisplay t={t} gameStats={gameStatus} />
+            </div>
 
-            {gameState === POSSIBLE_STATES.STARTED && (
-                <div>
-                    <h2>Тема: {gameStatus?.round_number}: {gameStatus?.round_name} Вопрос: {currentNominal}</h2>
-                    {gameStatus?.question_state === "fake" && (
-                        <div>
-                            <p>Game Status: {JSON.stringify(gameStatus)}</p>
-                        </div>
-                    )}
+            <div>
 
-                    {gameStatus?.question_state === "running" && (
+                {gameState === POSSIBLE_STATES.NOT_EXIST && <button onClick={() => logout()}>{t("somethingBroke")}</button>}
+                {(gameState === POSSIBLE_STATES.CREATED || gameState === POSSIBLE_STATES.AUTO_JOIN) && (
+                    <div>
+                        <button onClick={handleJoinGame}>{t("reconnect")}</button>
 
+                    </div>
+                )}
 
-                        <div>
+                {gameState === POSSIBLE_STATES.STARTED && (
+                    <div>
+                        <h2>{t("round")}: {gameStatus?.round_number}: {gameStatus?.round_name} {t("question")}: {gameStatus?.currentNominal}</h2>
+                        {gameStatus?.question_state === "fake" && (
+                            <div>
+                                <p>Game Status: {JSON.stringify(gameStatus)}</p>
+                            </div>
+                        )}
 
-                            <RoundStatsTable data={gameStatus.current_round_stats}
-                                number_of_question_in_round={gameStatus.number_of_question_in_round}
-                                nominals={gameStatus.nominals}
-                            />
-
-                            <button class="round-button" onClick={() => sendMessage({
-                                action: "signal",
-                                player_id: savedPlayer.player_id,
-                                local_ts: Date.now(),
-
-                            })}> {gameStatus.time_left < 5 ? gameStatus.time_left : "Тыц!"}</button>
-                        </div>
-                    )}
+                        {gameStatus?.question_state === "running" && (
 
 
+                            <div>
 
-                </div>)}
+                                <RoundStatsTable data={gameStatus.current_round_stats}
+                                    number_of_question_in_round={gameStatus.number_of_question_in_round}
+                                    nominals={gameStatus.nominals}
+                                />
+
+                                <button class="round-button" onClick={() => sendMessage({
+                                    action: "signal",
+                                    player_id: savedPlayer.player_id,
+                                    local_ts: Date.now(),
+
+                                })}> {gameStatus.time_left < 5 ? gameStatus.time_left : "Тыц!"}</button>
+                            </div>
+                        )}
+                    </div>)}
+
+                {loading && <p>{t("loading")}</p>}
 
 
-
-
-
-
-            {loading && <p>{t("loading")}</p>}
-
-
+            </div>
         </div>
-     </div>
     );
 }
 
