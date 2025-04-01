@@ -87,6 +87,14 @@ th {
     color: #FFD700; /* Желтый цвет заголовков */
 }
 
+th.highlighted, td.highlighted {
+    font-weight: bold; /* Делаем текст жирнее */
+    color: #FFD700; /* Ярко-желтый текст */
+    font-size: 2.5em; /* Увеличенный шрифт */
+    background-color: #555; /* Чуть светлее, чем остальные */
+    padding: 20px; /* Увеличиваем отступы */
+}
+
 .score {
     font-size: 2em;
     font-weight: bold;

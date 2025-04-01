@@ -281,6 +281,8 @@ class SIGame(AGame):
         status['game_id'] = self.game_id
         status["game_token"] = self.token
         status['round_number'] = self.current_round
+        status['nominals'] = self.nominals
+        status['number_of_question_in_round'] = self.number_of_question_in_round
         status['round_name'] = self.round_names[self.current_round - 1] if self.round_names is not None and len(self.round_names) > 0 else None
         status['round_names'] = self.round_names
         status['current_round_stats'] = self._generate_current_round_array()

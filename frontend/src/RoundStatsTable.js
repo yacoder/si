@@ -1,6 +1,13 @@
 import React from "react";
 
-const RoundStatsTable = ({ data }) => {
+const RoundStatsTable = ({ data, number_of_question_in_round, nominals }) => {
+
+  if (!data || data.length === 0 || !nominals) {
+    return <div></div>; // Return an empty div if data is empty
+  }
+
+  const highlightedColumnIndex = number_of_question_in_round;
+
   const getSymbolClass = (value) => {
     if (value === 1) return "plus";
     if (value === -1) return "minus";
@@ -13,17 +20,20 @@ const RoundStatsTable = ({ data }) => {
     return "•"; // Dot character
   };
 
-  return (
+  return data && (
     <table>
       <thead>
         <tr>
           <th>Игрок</th>
           <th>Счет</th>
-          <th>10</th>
-          <th>20</th>
-          <th>30</th>
-          <th>40</th>
-          <th>50</th>
+           {nominals.map((nominal, index) => (
+            <th
+              key={index}
+              className={index === highlightedColumnIndex ? "highlighted" : ""}
+            >
+              {nominal}
+            </th>
+          ))}
         </tr>
       </thead>
       <tbody>
@@ -34,7 +44,12 @@ const RoundStatsTable = ({ data }) => {
               {row[1]}
             </td>
             {row.slice(2).map((cell, i) => (
-              <td key={i} className={getSymbolClass(cell)}>{getSymbol(cell)}</td>
+              <td
+          key={i}
+          className={`${getSymbolClass(cell)} ${i === highlightedColumnIndex ? "highlighted" : ""}`}
+        >
+          {getSymbol(cell)}
+        </td>
             ))}
           </tr>
         ))}
