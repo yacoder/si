@@ -29,7 +29,7 @@ git pull
 pip install -r backend/app/requirements.txt
 
 # Install frontend dependencies
-# For some windoes installation one might need to run
+# For some Windows installations, one might need to run  to `cd frontend` first:
 # cd frontend; npm install; npm run watch
 npm --prefix frontend install
 
