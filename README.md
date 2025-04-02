@@ -1,4 +1,5 @@
 # Development Setup Guide
+
 ![Project Logo](assets/images/logo.jpg)
 
 This document outlines different methods for setting up and running the application, depending on your environment preferences.
@@ -28,7 +29,11 @@ git pull
 pip install -r backend/app/requirements.txt
 
 # Install frontend dependencies
+# For some windoes installation one might need to run
+# cd frontend; npm install; npm run watch
 npm --prefix frontend install
+
+
 ```
 
 **Running the application:**
@@ -110,3 +115,7 @@ mv docker-compose.build.yml docker-compose.yml
 # Start the containers
 docker-compose up
 ```
+
+## App Diagram
+
+[View Diagram](https://gitdiagram.com/vgramagin/si)
