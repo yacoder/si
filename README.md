@@ -13,7 +13,9 @@ opensource SI system
 - нужно: Python, node
 - git pull
 - pip install -r backend/app/requirements.txt
-- npm --prefix frontend install
+- npm --prefix frontend install 
+   - doesn't work on windows?
+     - cd frontend; npm install; npm run watch
 - 2 терминала:
   1. npm --prefix frontend run watch
   2. python -m backend.app.app --env debug
