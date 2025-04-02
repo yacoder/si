@@ -25,16 +25,15 @@ function LoginForm({ onLogin }) {
     const { t, i18n } = useTranslation(); // Hook for translations
 
     const [userToken, setUserToken] = useState('');
-    const [gameToken, setGameToken] = useState('10001');
+    const [gameToken, setGameToken] = useState('');
+    const [hostSectionCollapsed, setHostSectionCollapsed] = useState(true); // New state for host section collapse
 
 
     const [hostName, setHostName] = useState('');
-    const [playerName, setPlayerName] = useState(generateRandomString(5));
+    const [playerName, setPlayerName] = useState('');
     const [hostEmail, setHostEmail] = useState('');
 
     const [gameSettings, setGameSettings] = useState({});
-
-
 
     const [error, setError] = useState('');
 
@@ -118,41 +117,7 @@ function LoginForm({ onLogin }) {
             )}
             <form class="login-form">
                 <div>
-                    <h2>{t("host")}</h2>
-                    <input
-                        type="text"
-                        value={hostName}
-                        onChange={(e) => setHostName(e.target.value)}
-                        placeholder={t("hostNamePlaceholder")}
-                    />
-                    {!SIMPLE_LOGIN_FORM && (
-                        <input
-                            type="email"
-                            value={hostEmail}
-                            onChange={(e) => setHostEmail(e.target.value)}
-                            placeholder={t("hostEmailPlaceholder")}
-                        />
-                    )}
-                    <GameSettingsCollector
-                        t={t}
-                        fireSendUpdatedGameSettings={() => { }}
-                        allowSetRoundNumber={true}
-                        setGameSettings={setGameSettings}
-                        gameSettings={gameSettings}
-                    />
-                    <button onClick={handleSubmitHostStart}>{t("startNewGame")}</button>
-                    <h3>{t("hostCabinet")}</h3>
-                    <input
-                        type="text"
-                        value={userToken}
-                        onChange={(e) => setUserToken(e.target.value)}
-                        placeholder={t("hostCodePlaceholder")}
-                    />
-                    <button onClick={handleSubmitHost}>{t("goToGameSelection")}</button>
-                </div>
-
-                <div>
-                    <h2>{t("player")}</h2>
+                    <h2>{t("IWantToPlay")}</h2>
                     <input
                         type="text"
                         value={playerName}
@@ -166,6 +131,55 @@ function LoginForm({ onLogin }) {
                         placeholder={t("gameTokenPlaceholder")}
                     />
                     <button onClick={handleSubmitPlayer}>{t("joinGame")}</button>
+                </div>
+
+                <hr style={{ 
+                    width: '100%', 
+                    margin: '20px 0', 
+                    border: 0, 
+                    height: '1px', 
+                    backgroundColor: '#ccc' 
+                }} />
+
+                <div>
+                    <h2 style={{ cursor: 'pointer' }} onClick={() => setHostSectionCollapsed(!hostSectionCollapsed)}>
+                        {t("IWantToHost")} {hostSectionCollapsed ? '▼' : '▲'}
+                    </h2>
+                    
+                    {!hostSectionCollapsed && (
+                        <>
+                            <input
+                                type="text"
+                                value={hostName}
+                                onChange={(e) => setHostName(e.target.value)}
+                                placeholder={t("hostNamePlaceholder")}
+                            />
+                            {!SIMPLE_LOGIN_FORM && (
+                                <input
+                                    type="email"
+                                    value={hostEmail}
+                                    onChange={(e) => setHostEmail(e.target.value)}
+                                    placeholder={t("hostEmailPlaceholder")}
+                                />
+                            )}
+                            <GameSettingsCollector
+                                t={t}
+                                fireSendUpdatedGameSettings={() => { }}
+                                allowSetRoundNumber={true}
+                                setGameSettings={setGameSettings}
+                                gameSettings={gameSettings}
+                            />
+                            <button onClick={handleSubmitHostStart}>{t("startNewGame")}</button>
+                            <h3>{t("hostCabinet")}</h3>
+                            <input
+                                type="text"
+                                value={userToken}
+                                onChange={(e) => setUserToken(e.target.value)}
+                                placeholder={t("hostCodePlaceholder")}
+                            />
+                            <button onClick={handleSubmitHost}>{t("goToGameSelection")}</button>
+                        </>
+                    )}
                 </div>
 
                 <div>
