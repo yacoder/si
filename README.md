@@ -1,41 +1,112 @@
-# si
-opensource SI system
+# Development Setup Guide
+![Project Logo](assets/images/logo.jpg)
 
-# notes
+This document outlines different methods for setting up and running the application, depending on your environment preferences.
 
-Так как на сервере нет ни докера ни нода, то на сервер идет дистрибутив.
-Дистрибутив делается в Git и деплоится автоматически скиптом на сервер.
 
-# dev instructions
+## CI/CD Status
 
-Мы поддерживаем следующие конфигурации:
-### 1) 100% локальная разработка:
-- нужно: Python, node
-- git pull
-- pip install -r backend/app/requirements.txt
-- npm --prefix frontend install 
-   - doesn't work on windows?
-     - cd frontend; npm install; npm run watch
-- 2 терминала:
-  1. npm --prefix frontend run watch
-  2. python -m backend.app.app --env debug
+[![Build Status](https://github.com/vgramagin/si/actions/workflows/main.yml/badge.svg)](https://github.com/vgramagin/si/actions/workflows/main.yml)
 
-### 2) локальная разработка для докера
-- нужно: Докер
-- git pull
-- rename docker-compose.debug.yml -> docker-compose.yml 
-- docker-compose up
-- docker-exec -it si-dev-app-1 bash
-- python -m backend.app.app --env debug (внутри container)
 
-### 3) локальный запуск (очень похоже на сервер)
-- нужно: Python
-- скачиваем и достаем все из дистрибутива: https://github.com/vgramagin/si/actions/runs/14164565400/artifacts/2848738289 ( это сегодняшняя версия, есть скрипт который ее находит)
-- pip install -r backend/app/requirements.txt
-- python -m backend.app.app
+## Configuration Options
 
-### 4) локальный запуск docker
-- нужно: Докер
-- git pull
-- rename docker-compose.build.yml -> docker-compose.yml 
-- docker-compose up
+### 1. Full Local Development
+
+**Requirements:**
+
+- Python
+- Node.js
+
+**Setup:**
+```bash
+
+# Clone the repository
+git pull
+
+# Install backend dependencies
+pip install -r backend/app/requirements.txt
+
+# Install frontend dependencies
+npm --prefix frontend install
+```
+
+**Running the application:**
+Open two terminal windows:
+```bash
+
+# Terminal 1 - Frontend with hot reload
+npm --prefix frontend run watch
+
+# Terminal 2 - Backend in debug mode
+python -m backend.app.app --env debug
+```
+
+### 2. Docker-based Local Development
+
+**Requirements:**
+
+- Docker
+
+**Setup:**
+
+```bash
+# Clone the repository
+git pull
+
+# Rename the development docker-compose file
+mv docker-compose.debug.yml docker-compose.yml
+
+# Start the containers
+docker-compose up
+```
+
+**Accessing the application container:**
+
+```bash
+# Access the application container shell
+docker exec -it si-dev-app-1 bash
+
+# Run the backend in debug mode inside the container
+python -m backend.app.app --env debug
+```
+
+### 3. Local Execution (Server-like Environment)
+**Requirements:**
+- Python
+
+**Setup:**
+
+```bash
+# Download and extract the distribution package from:
+# https://github.com/vgramagin/si/actions/runs/14164565400/artifacts/2848738289
+# (Note: This is a specific version - a script is available to find the latest)
+
+# Install dependencies
+pip install -r backend/app/requirements.txt
+```
+
+**Running the application:**
+
+```bash
+# Run the backend
+python -m backend.app.app
+```
+
+### 4. Local Docker Production-like Environment
+
+**Requirements:**
+- Docker
+
+**Setup:**
+
+```bash
+# Clone the repository
+git pull
+
+# Rename the production docker-compose file
+mv docker-compose.build.yml docker-compose.yml
+
+# Start the containers
+docker-compose up
+```
