@@ -116,6 +116,45 @@ mv docker-compose.build.yml docker-compose.yml
 docker-compose up
 ```
 
+### 5. Local DB docker command
+
+**Requirements:**
+- Docker
+
+**Setup:**
+
+```
+docker run --name mysql-container -e MYSQL_ROOT_PASSWORD=rootpassword -e MYSQL_DATABASE=chgksi -e MYSQL_USER=chgk-si -e MYSQL_PASSWORD=chgkpassword -p 3306:3306 -d mysql:latest
+```
+
+Then add following env variable:
+ "SI_DB_CONFIG": "mysql://chgk-si:chgkpassword@localhost/chgksi",
+
 ## App Diagram
 
 [View Diagram](https://gitdiagram.com/vgramagin/si)
+
+## DB Creation scripts
+```
+CREATE TABLE users (
+    id VARCHAR(255) NOT NULL UNIQUE, -- Unique string for the user ID
+    email VARCHAR(255) NOT NULL,    -- Email field
+    name VARCHAR(255) NOT NULL,     -- Name field
+    token VARCHAR(255) NOT NULL,    -- Token field
+    ratingid INT DEFAULT 0,         -- Integer field for rating ID
+    PRIMARY KEY (id),               -- Set `id` as the primary key    
+    UNIQUE (token)                  -- Ensure token is unique
+);
+
+CREATE TABLE games (
+    id VARCHAR(255) NOT NULL UNIQUE, -- Unique string for the user ID
+    name VARCHAR(255) NOT NULL,     -- Name field
+    host_user_id VARCHAR(255) NOT NULL,    -- host user id field
+    tournament_id VARCHAR(255) NOT NULL,     -- tournament id field
+    status VARCHAR(255) NOT NULL,    -- status field
+    token VARCHAR(255) NOT NULL,    -- Token field
+    data TEXT CHARACTER SET utf8mb4 NOT NULL,    -- JSON data
+    PRIMARY KEY (id)               -- Set `id` as the primary key    
+);
+
+```
